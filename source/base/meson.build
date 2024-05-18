@@ -1,10 +1,13 @@
 # baseArkBot Core sources
 
 baseArkBotSrc =  [
+  'core/Arkanoid/GameData.cpp',
+  'core/Arkanoid/GameOperations.cpp',
 ]
 
 baseArkBotIncludeDirs = [
  '.',
+ 'core/Arkanoid/',
 ]
 
 baseArkBotCompileArgs = [
