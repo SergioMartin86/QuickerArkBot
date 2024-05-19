@@ -20,6 +20,7 @@ baseArkBotCompileArgs = [
   include_directories : include_directories(baseArkBotIncludeDirs),
   sources             : [ baseArkBotSrc ],
   dependencies        : [  
+                          quickerNESDependency,
                           dependency('sdl2',  required : true),
                         ]
  )
