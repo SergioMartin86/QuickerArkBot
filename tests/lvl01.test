@@ -1,7 +1,10 @@
 {
   "Initial State File": "",
+  "Initial Sequence File": "lvl01.initial.sol",
   "Disable State Blocks": [ ],
   "Rom File Path": "Arkanoid (U) [!].nes",
+  "Controller 1 Type": "Joypad",
+  "Controller 2 Type": "None",
   "Differential Compression":
   {
     "Enabled": false,

@@ -72,8 +72,17 @@ int main(int argc, char *argv[])
   // Getting initial state file path
   const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
 
-  // Getting Another World data file path
+  // Getting Arkanoid rom file path
   const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File Path");
+
+  // Getting initial state file path
+  const auto initialSequenceFilePath = jaffarCommon::json::getString(configJs, "Initial Sequence File");
+
+  // Getting Controller 1 type
+  std::string controller1Type = jaffarCommon::json::getString(configJs, "Controller 1 Type");
+
+  // Getting Controller 2 type
+  std::string controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
 
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
@@ -103,6 +112,10 @@ int main(int argc, char *argv[])
   // Creating emulator instance
   auto e = ark::EmuInstance();
 
+ // Setting controller types
+  e.setController1Type(controller1Type);
+  e.setController2Type(controller2Type);
+  
   // Initializing emulator instance
   e.initialize(romFilePath);
 
@@ -113,9 +126,18 @@ int main(int argc, char *argv[])
   if (initialStateFilePath != "")
   {
     std::string stateFileData;
-    if (jaffarCommon::file::loadStringFromFile(stateFileData, initialStateFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
+    if (jaffarCommon::file::loadStringFromFile(stateFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial sequence file: %s\n", initialSequenceFilePath.c_str());
     jaffarCommon::deserializer::Contiguous d(stateFileData.data());
     e.deserializeState(d);
+  }
+
+  // If an initial sequence is provided, load it now
+  if (initialSequenceFilePath != "")
+  {
+    std::string initialSequenceFileData;
+    if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
+    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, ' ');
+    for (const auto& input : initialSequence) e.advanceState(input);
   }
   
   // Disabling requested blocks from state serialization

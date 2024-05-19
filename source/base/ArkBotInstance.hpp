@@ -39,7 +39,7 @@ class EmuInstance : public EmuInstanceBase
     _nes.load_ines((uint8_t*)romData.data());
 
     // Allocating video buffer
-    _video_buffer = (uint8_t *)malloc(image_width * image_height);
+    _video_buffer = (uint8_t *)malloc(getBlitSize());
   }
 
   void initializeVideoOutput() override
@@ -51,8 +51,7 @@ class EmuInstance : public EmuInstanceBase
 
     // Loading Emulator instance HQN
     _hqnState.setEmulatorPointer(&_nes);
-    static uint8_t video_buffer[image_width * image_height];
-    _hqnState.m_emu->set_pixels(video_buffer, image_width + 8);
+    _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
 
     // Enabling emulation rendering
     enableRendering();
@@ -111,16 +110,17 @@ class EmuInstance : public EmuInstanceBase
 
   uint8_t* getRamPointer() const override { return nullptr; }
 
-  void advanceStateImpl(ark::Controller controller) override
+  void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) override
   {
     if (_doRendering == true) 
     {
-      _nes.emulate_frame(0,0);
+      _nes.emulate_frame(controller1, controller2);
       saveBlit(&_nes, _curBlit, hqn::HQNState::NES_VIDEO_PALETTE, 0, 0, 0, 0);
     }
 
-    if (_doRendering == false) _nes.emulate_skip_frame(0,0);
+    if (_doRendering == false) _nes.emulate_skip_frame(controller1, controller2);
   }
+
 
   private:
 

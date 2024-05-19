@@ -30,7 +30,37 @@ class EmuInstanceBase
     bool isInputValid = _controller.parseInputString(move);
     if (isInputValid == false) JAFFAR_THROW_LOGIC("Move provided cannot be parsed: '%s'\n", move.c_str());
 
-    advanceStateImpl(_controller);
+    // Parsing power
+    if (_controller.getPowerButtonState() == true) JAFFAR_THROW_LOGIC("Power button pressed, but not supported: '%s'\n", move.c_str());
+
+    // Parsing reset
+    if (_controller.getResetButtonState() == true) doSoftReset();
+
+    // Parsing Controllers
+    const auto controller1 = _controller.getController1Code();
+    const auto controller2 = _controller.getController2Code();
+
+    advanceStateImpl(controller1, controller2);
+  }
+
+  inline void setController1Type(const std::string& type)
+  {
+    bool isTypeRecognized = false;
+
+    if (type == "None") { _controller.setController1Type(ark::Controller::controller_t::none); isTypeRecognized = true; }
+    if (type == "Joypad") { _controller.setController1Type(ark::Controller::controller_t::joypad); isTypeRecognized = true; }
+
+    if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
+  }
+
+  inline void setController2Type(const std::string& type)
+  {
+    bool isTypeRecognized = false;
+
+    if (type == "None") { _controller.setController2Type(ark::Controller::controller_t::none); isTypeRecognized = true; }
+    if (type == "Joypad") { _controller.setController2Type(ark::Controller::controller_t::joypad); isTypeRecognized = true; }
+    
+    if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
   }
 
   inline jaffarCommon::hash::hash_t getStateHash() const
@@ -96,7 +126,7 @@ class EmuInstanceBase
 
   protected:
 
-  virtual void advanceStateImpl(const ark::Controller controller) = 0;
+ virtual void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) = 0;
 
   virtual void enableStateBlockImpl(const std::string& block) {};
   virtual void disableStateBlockImpl(const std::string& block) {};

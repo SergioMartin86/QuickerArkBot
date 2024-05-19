@@ -83,9 +83,10 @@ class EmuInstance : public EmuInstanceBase
 
   uint8_t* getRamPointer() const override { return nullptr; }
 
-  void advanceStateImpl(ark::Controller controller) override
+  void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) override
   {
   }
+
 
   private:
 
