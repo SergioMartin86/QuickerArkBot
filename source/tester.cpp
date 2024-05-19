@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
   const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
 
   // Getting Another World data file path
-  const auto gameDataPath = jaffarCommon::json::getString(configJs, "Game Data Path");
+  const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File Path");
 
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   auto e = ark::EmuInstance();
 
   // Initializing emulator instance
-  e.initialize(gameDataPath);
+  e.initialize(romFilePath);
 
   // Disable rendering
   e.disableRendering();

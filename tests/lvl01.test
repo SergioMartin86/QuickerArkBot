@@ -1,7 +1,7 @@
 {
-  "Initial State File": "lvl01.state",
-  "Disable State Blocks": [ "NVS" ],
-  "Game Data Path": "gameData",
+  "Initial State File": "",
+  "Disable State Blocks": [ ],
+  "Rom File Path": "Arkanoid (U) [!].nes",
   "Differential Compression":
   {
     "Enabled": false,

@@ -11,6 +11,7 @@ struct stepData_t
 {
   std::string input;
   uint8_t *stateData;
+  uint8_t *videoBuffer;
   jaffarCommon::hash::hash_t hash;
 };
 
@@ -44,6 +45,10 @@ class PlaybackInstance
       step.stateData = (uint8_t *)malloc(_fullStateSize);
       memcpy(step.stateData, stateData, _fullStateSize);
 
+      // Saving video buffer
+      step.videoBuffer = (uint8_t *)malloc(_emu->getBlitSize());
+      memcpy(step.videoBuffer, _emu->getBlitPointer(), _emu->getBlitSize());
+
       // Adding the step into the sequence
       _stepSequence.push_back(step);
 
@@ -61,11 +66,19 @@ class PlaybackInstance
     // Adding last step with no input
     stepData_t step;
     step.input = "<End Of Sequence>";
-    step.stateData = (uint8_t *)malloc(_fullStateSize);
-    jaffarCommon::serializer::Contiguous s(step.stateData, _fullStateSize);
 
+    // Serializing state
+    jaffarCommon::serializer::Contiguous s(stateData, _fullStateSize);
     _emu->serializeState(s);
     step.hash = _emu->getStateHash();
+
+    // Saving step data
+    step.stateData = (uint8_t *)malloc(_fullStateSize);
+    memcpy(step.stateData, stateData, _fullStateSize);
+
+    // Saving video buffer
+    step.videoBuffer = (uint8_t *)malloc(_emu->getBlitSize());
+    memcpy(step.videoBuffer, _emu->getBlitPointer(), _emu->getBlitSize());
 
     // Adding the step into the sequence
     _stepSequence.push_back(step);
@@ -79,6 +92,12 @@ class PlaybackInstance
   {
     // Checking the required step id does not exceed contents of the sequence
     if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
+
+    // Getting video buffer
+    auto videoBuffer = getStateVideoBuffer(stepId);
+
+    // Copying video buffer
+    memcpy(_emu->getBlitPointer(), videoBuffer, _emu->getBlitSize());
 
     // Updating image
     _emu->updateRenderer();
@@ -111,6 +130,18 @@ class PlaybackInstance
 
     // Returning step input
     return step.stateData;
+  }
+
+    const uint8_t *getStateVideoBuffer(const size_t stepId) const
+  {
+    // Checking the required step id does not exceed contents of the sequence
+    if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
+
+    // Getting step information
+    const auto &step = _stepSequence[stepId];
+
+    // Returning step input
+    return step.videoBuffer;
   }
 
   const jaffarCommon::hash::hash_t getStateHash(const size_t stepId) const

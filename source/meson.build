@@ -1,8 +1,7 @@
 # Getting quicker nes dependency
 quickerNESSubproject = subproject('quickerNES', default_options : 'buildQuickNES=false')
-
-# Getting QuickerNES dependency
 quickerNESDependency = quickerNESSubproject.get_variable('quickerNESDependency')
+hqnDependency = quickerNESSubproject.get_variable('hqnDependency')
 
 # Getting core configurations
 

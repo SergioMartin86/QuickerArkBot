@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
   const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
 
   // Getting Another World data file path
-  const auto gameDataPath = jaffarCommon::json::getString(configJs, "Game Data Path");
+  const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File Path");
 
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
   auto e = ark::EmuInstance();
 
   // Initializing emulator instance
-  e.initialize(gameDataPath);
+  e.initialize(romFilePath);
 
   // If rendering enabled, then initailize it now
   if (disableRender == false) e.enableRendering();
@@ -160,24 +160,6 @@ int main(int argc, char *argv[])
       jaffarCommon::logger::log("[] Current Step #: %lu / %lu\n", currentStep + 1, sequenceLength);
       jaffarCommon::logger::log("[] Input:          %s\n", input.c_str());
       jaffarCommon::logger::log("[] State Hash:     0x%lX%lX\n", hash.first, hash.second);
-
-
-      uint16_t* VMVariables = (uint16_t*)e.getRamPointer();
-      jaffarCommon::logger::log("[] Memory Values: \n");
-      jaffarCommon::logger::log("[] ");
-      for (size_t j = 0; j < 16; j++) jaffarCommon::logger::log("%04X ", j);
-      jaffarCommon::logger::log("\n[] ");
-      for (size_t j = 0; j < 16; j++) jaffarCommon::logger::log("-----");
-      jaffarCommon::logger::log("\n");
-      for (size_t i = 0; i < 16; i++)
-      {
-        jaffarCommon::logger::log("[] ");
-        for (size_t j = 0; j < 16; j++)
-        {
-          jaffarCommon::logger::log("%04X ", VMVariables[i*16 + j]);
-        }
-        jaffarCommon::logger::log(" | %02X\n", i);
-      }
 
       // Only print commands if not in reproduce mode
       if (isReproduce == false) jaffarCommon::logger::log("[] Commands: n: -1 m: +1 | h: -10 | j: +10 | y: -100 | u: +100 | k: -1000 | i: +1000 | s: quicksave | p: play | o: replace ram | q: quit\n");

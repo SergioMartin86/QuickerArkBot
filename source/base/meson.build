@@ -1,13 +1,13 @@
 # baseArkBot Core sources
 
 baseArkBotSrc =  [
-  'core/Arkanoid/GameData.cpp',
-  'core/Arkanoid/GameOperations.cpp',
+  'core/source/GameData.cpp',
+  'core/source/GameOperations.cpp',
 ]
 
 baseArkBotIncludeDirs = [
  '.',
- 'core/Arkanoid/',
+ 'core/source/',
 ]
 
 baseArkBotCompileArgs = [
@@ -21,6 +21,7 @@ baseArkBotCompileArgs = [
   sources             : [ baseArkBotSrc ],
   dependencies        : [  
                           quickerNESDependency,
+                          hqnDependency,
                           dependency('sdl2',  required : true),
                         ]
  )
