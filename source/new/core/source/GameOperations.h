@@ -157,8 +157,8 @@ public:
             state.currentBlocks = Data::LevelBlockCount[level];
             state.totalBlocks = state.currentBlocks;
 
-            for (int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
-            for (int i = 0; i < GameConsts::BlockTableSize - 33; i++)
+            for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
+            for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++)
             {
                 state.blocks[i] = Data::LevelData[level][i+11];
             }
@@ -853,7 +853,7 @@ public:
         state.calculatedCell.x = posHi.x;
         state.calculatedCell.y = posHi.y;
 
-        const auto posHiOrig = posHi;
+        // const auto posHiOrig = posHi;
         const auto posLoOrig = posLo;
 
         if (state.level != 0 && !_Pedantic)

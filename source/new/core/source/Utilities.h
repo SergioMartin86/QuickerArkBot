@@ -65,27 +65,27 @@ public:
 
     static std::string WorkingDir()
     {
-        return (!workingDir.empty() ? workingDir : std::filesystem::current_path().c_str()) + "(\)";
+        return "";
     }
 
     static std::string UnitTestDir()
     {
-        return WorkingDir() + "(TestData\)";
+        return "";
     }
 
     static std::string ResultsDir()
     {
-        return WorkingDir() + std::string("(Results\)");
+        return "";
     }
 
     static std::string PartialsDir()
     {
-        return FileUtil::ResultsDir() + "(partials\)";
+        return "";
     }
 
     static std::string ScoreVarDir()
     {
-        return FileUtil::ResultsDir() + "(scoreVariants\)";
+        return "";
     }
 
     static void ClearFile(const std::string& filename)

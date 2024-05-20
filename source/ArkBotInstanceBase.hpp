@@ -24,8 +24,9 @@ class EmuInstanceBase
 
   EmuInstanceBase(const uint8_t initialLevel, const unsigned int initialScore, const bool useVerification) :
     _initialLevel (initialLevel),
-    _useVerification(useVerification),
-    _initialScore(initialScore)  {};
+    _initialScore(initialScore),
+    _useVerification(useVerification)
+     {};
   virtual ~EmuInstanceBase() = default;
 
   inline void advanceState(const std::string &move)

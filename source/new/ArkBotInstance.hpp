@@ -194,7 +194,7 @@ class EmuInstance : public EmuInstanceBase
   void advanceStateImpl(const ark::Controller& controller) override
   {
     ark::Controller::port_t port1 = controller.getController1Code();
-    ark::Controller::port_t port2 = controller.getController2Code();
+    // ark::Controller::port_t port2 = controller.getController2Code();
     bool fire = controller.getController1Arkanoid().fire;
     uint8_t position = controller.getController1Arkanoid().position;
 
