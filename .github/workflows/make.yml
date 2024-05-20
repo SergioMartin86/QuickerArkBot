@@ -20,16 +20,15 @@ jobs:
     - name: Updating apt
       run: sudo apt-get update
     - name: Installing apt packages
-      run: sudo apt install libgtest-dev gcovr libnuma-dev libtbb-dev libsdl2-dev libsdl2-image-dev libvorbis-dev
+      run: sudo apt install libgtest-dev libsdl2-dev libsdl2-image-dev
     - name: Installing meson and ninja
       run: python3 -m pip install meson ninja
     - name: Run meson configuration
       run: meson setup build -DonlyOpenSource=true
     - name: Building project
       run: ninja -C build
-    # Tests require Another World game files which I cannot upload  
-    #- name: Running tests
-    #  run: SDL_AUDIODRIVER=dummy SDL_VIDEODRIVER=dummy ninja test -C build
+    - name: Running tests
+      run: ninja test -C build
     - uses: actions/upload-artifact@v4
       with:
         name: meson-logs

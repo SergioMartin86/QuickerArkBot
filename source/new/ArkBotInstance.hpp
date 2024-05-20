@@ -195,24 +195,71 @@ class EmuInstance : public EmuInstanceBase
   {
     ark::Controller::port_t port1 = controller.getController1Code();
     ark::Controller::port_t port2 = controller.getController2Code();
+    bool fire = controller.getController1Arkanoid().fire;
+    uint8_t position = controller.getController1Arkanoid().position;
 
-    // Advancing arkbot
-    Input input = 0;
-    if (port1 & 0b01000000) input |= LeftInput;
-    if (port1 & 0b10000000) input |= RightInput;
-    if (port1 & 0b00000001) input |= AInput;
-    _arkEngine.AdvanceFrame(_arkState, input);
+    uint8_t adjustedPosition = position + 2;
+    if (adjustedPosition < 16) adjustedPosition = 16;
+    if (adjustedPosition > 160) adjustedPosition = 160;
+
+    if (controller.getController1Type() == ark::Controller::controller_t::joypad)
+    {
+      // Advancing arkbot
+      Input input = 0;
+      if (port1 & 0b01000000) input |= LeftInput;
+      if (port1 & 0b10000000) input |= RightInput;
+      if (port1 & 0b00000001) input |= AInput;
+      _arkEngine.AdvanceFrame(_arkState, input);
+    }
+
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
+    {
+      // Now setting paddle position
+      _arkState.paddleX = adjustedPosition;
+
+      // If  we still have the ball, we bring it with us
+      if (_arkState.opState == OperationalState::BallNotLaunched) _arkState.ball[0].pos.x = adjustedPosition + 16;
+      
+      // Advancing arkbot
+      Input input = 0;
+      if (fire) input |= AInput;
+      _arkEngine.AdvanceFrame(_arkState, input);
+    }
 
     if (_useVerification == false) return; 
+
+    // Getting quicknes input
+    uint32_t qInput = 0;
+    uint8_t gameMode = _nes.get_low_mem()[0x000A];
+    if (controller.getController1Type() == ark::Controller::controller_t::joypad) qInput = port1;
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
+    {
+      if (fire && gameMode >= 7) qInput |= 0b00000001; // A, for in game
+      if (fire && gameMode < 7)  qInput |= 0b00001000; // S, for start menu
+    }
+
+    // If using arkanoid controller, adjust position
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
+    {
+      _nes.get_low_mem()[0x011A] = adjustedPosition;
+      _nes.get_low_mem()[0x011B] = adjustedPosition + 8;
+      _nes.get_low_mem()[0x011C] = adjustedPosition + 8;
+      _nes.get_low_mem()[0x011D] = adjustedPosition + 16;
+      _nes.get_low_mem()[0x011E] = adjustedPosition + 16;
+      _nes.get_low_mem()[0x011F] = adjustedPosition + 24;
+      
+      // If game mode is 8, we still have the ball, then we bring it with us
+      if (gameMode == 8) _nes.get_low_mem()[0x0038] = adjustedPosition + 16;
+    } 
 
     // Advancing quickernes at the same time
     if (_doRendering == true) 
     {
-      _nes.emulate_frame(port1, port2);
+      _nes.emulate_frame(qInput, 0);
       saveBlit(&_nes, _curBlit, hqn::HQNState::NES_VIDEO_PALETTE, 0, 0, 0, 0);
     }
 
-    if (_doRendering == false) _nes.emulate_skip_frame(port1, port2);
+    if (_doRendering == false) _nes.emulate_skip_frame(qInput, 0);
   }
 
   void printInformation() const override

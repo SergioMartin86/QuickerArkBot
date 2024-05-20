@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
   if (status == false) JAFFAR_THROW_LOGIC("[ERROR] Could not find or read from sequence file: %s\n", sequenceFilePath.c_str());
 
   // Building sequence information
-  const auto sequence = jaffarCommon::string::split(inputSequence, ' ');
+  const auto sequence = jaffarCommon::string::split(inputSequence, '#');
 
   // Initializing terminal
   jaffarCommon::logger::initializeTerminal();
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   {
     std::string initialSequenceFileData;
     if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial sequence file: %s\n", initialSequenceFilePath.c_str());
-    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, ' ');
+    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, '#');
     for (const auto& input : initialSequence) e.advanceState(input);
     e.doSoftReset();
   }

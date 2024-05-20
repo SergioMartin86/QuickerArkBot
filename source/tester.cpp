@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   {
     std::string initialSequenceFileData;
     if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
-    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, ' ');
+    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, '#');
     for (const auto& input : initialSequence) e.advanceState(input);
     e.doSoftReset();
   }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   if (jaffarCommon::file::loadStringFromFile(sequenceRaw, sequenceFilePath) == false) JAFFAR_THROW_LOGIC("[ERROR] Could not find or read from input sequence file: %s\n", sequenceFilePath.c_str());
 
   // Building sequence information
-  const auto sequence = jaffarCommon::string::split(sequenceRaw, ' ');
+  const auto sequence = jaffarCommon::string::split(sequenceRaw, '#');
 
   // Getting sequence lenght
   const auto sequenceLength = sequence.size();
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
   }
   jaffarCommon::logger::log("[] Internal Information:\n");
   e.printInformation();
-  
+
   // If saving hash, do it now
   if (hashOutputFile != "") jaffarCommon::file::saveStringToFile(std::string(hashStringBuffer), hashOutputFile.c_str());
 
