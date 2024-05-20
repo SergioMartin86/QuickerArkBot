@@ -22,7 +22,10 @@ class EmuInstanceBase
 {
   public:
 
-  EmuInstanceBase() = default;
+  EmuInstanceBase(const uint8_t initialLevel, const unsigned int initialScore, const bool useVerification) :
+    _initialLevel (initialLevel),
+    _useVerification(useVerification),
+    _initialScore(initialScore)  {};
   virtual ~EmuInstanceBase() = default;
 
   inline void advanceState(const std::string &move)
@@ -124,6 +127,8 @@ class EmuInstanceBase
   virtual void doHardReset() = 0;
   virtual std::string getCoreName() const = 0;
 
+  virtual void printInformation() const = 0;
+
   protected:
 
  virtual void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) = 0;
@@ -143,6 +148,15 @@ class EmuInstanceBase
   uint8_t *_video_buffer;
   int32_t _curBlit[BLIT_SIZE];
 
+  // Initial level for Arkbot
+  const uint8_t _initialLevel;
+
+  // Initial score
+  const unsigned int _initialScore;
+
+  // Whether to use verification (QuickerNES)
+  const bool _useVerification;
+
   private:
 
   // Controller class for input parsing
@@ -150,6 +164,7 @@ class EmuInstanceBase
 
   // Differential state size
   size_t _differentialStateSize;
+
 
 };
 

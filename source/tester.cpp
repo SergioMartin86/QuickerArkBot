@@ -84,6 +84,12 @@ int main(int argc, char *argv[])
   // Getting Controller 2 type
   std::string controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
 
+  // Getting inital level
+  uint8_t initialLevel = jaffarCommon::json::getNumber<uint8_t>(configJs, "Initial Level");
+
+  // Getting inital score
+  unsigned int initialScore = jaffarCommon::json::getNumber<unsigned int>(configJs, "Initial Score");
+
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
 
@@ -110,7 +116,7 @@ int main(int argc, char *argv[])
   const auto differentialCompressionUseZlib = differentialCompressionJs["Use Zlib"].get<bool>();
 
   // Creating emulator instance
-  auto e = ark::EmuInstance();
+  auto e = ark::EmuInstance(initialLevel, initialScore, false);
 
  // Setting controller types
   e.setController1Type(controller1Type);
@@ -138,6 +144,7 @@ int main(int argc, char *argv[])
     if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
     const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, ' ');
     for (const auto& input : initialSequence) e.advanceState(input);
+    e.doSoftReset();
   }
   
   // Disabling requested blocks from state serialization

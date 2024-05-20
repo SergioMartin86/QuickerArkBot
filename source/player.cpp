@@ -70,6 +70,12 @@ int main(int argc, char *argv[])
   // Getting Controller 2 type
   std::string controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
 
+  // Getting initial level
+  uint8_t initialLevel = jaffarCommon::json::getNumber<uint8_t>(configJs, "Initial Level");
+
+  // Getting inital score
+  unsigned int initialScore = jaffarCommon::json::getNumber<unsigned int>(configJs, "Initial Score");
+
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
 
@@ -104,7 +110,7 @@ int main(int argc, char *argv[])
   jaffarCommon::logger::refreshTerminal();
 
   // Creating emulator instance  
-  auto e = ark::EmuInstance();
+  auto e = ark::EmuInstance(initialLevel, initialScore, true);
 
   // Setting controller types
   e.setController1Type(controller1Type);
@@ -135,6 +141,7 @@ int main(int argc, char *argv[])
     if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial sequence file: %s\n", initialSequenceFilePath.c_str());
     const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, ' ');
     for (const auto& input : initialSequence) e.advanceState(input);
+    e.doSoftReset();
   }
 
   // Disabling requested blocks from state serialization
@@ -182,6 +189,8 @@ int main(int argc, char *argv[])
       jaffarCommon::logger::log("[] Current Step #: %lu / %lu\n", currentStep + 1, sequenceLength);
       jaffarCommon::logger::log("[] Input:          %s\n", input.c_str());
       jaffarCommon::logger::log("[] State Hash:     0x%lX%lX\n", hash.first, hash.second);
+      jaffarCommon::logger::log("[] Internal Information:\n");
+      e.printInformation();
 
       // Only print commands if not in reproduce mode
       if (isReproduce == false) jaffarCommon::logger::log("[] Commands: n: -1 m: +1 | h: -10 | j: +10 | y: -100 | u: +100 | k: -1000 | i: +1000 | s: quicksave | p: play | o: replace ram | q: quit\n");

@@ -16,7 +16,7 @@ class EmuInstance : public EmuInstanceBase
 {
  public:
 
-  EmuInstance() : EmuInstanceBase()
+  EmuInstance(const uint8_t level, const unsigned int initialScore, const bool useVerification) : EmuInstanceBase(level, initialScore, useVerification)
   {
   }
 
@@ -85,6 +85,11 @@ class EmuInstance : public EmuInstanceBase
 
   void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) override
   {
+  }
+
+  void printInformation() const override
+  {
+
   }
 
 
