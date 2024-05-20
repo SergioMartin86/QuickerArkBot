@@ -113,17 +113,17 @@ public:
 
         RefreshMiscState(state);
         ProcessInput(state, input);
-        if(_SimulateScore(state)) UpdateScore(state);
+        UpdateScore(state);
         CheckPowerupCanSpawn(state);
-        if (_SimulateEnemies(state)) UpdateEnemies(state);
-        if (_SimulateEnemies(state)) CheckPaddleCollisWithEnemy(state);
+        UpdateEnemies(state);
+        CheckPaddleCollisWithEnemy(state);
         UpdatePowerup(state);
         UpdateBallSprites(state);
         CheckLaunchBall(state);
         CheckPaddleMove(state);
         UpdateActiveBalls(state);
         CheckPowerupCanBeCollected(state);
-        if (_SimulateEnemies(state)) UpdateTimers(state);
+        UpdateTimers(state);
     }
 
     static inline void LoadLevel(GameState& state, unsigned int level)
@@ -185,8 +185,8 @@ public:
 
     static inline unsigned int _RandNum(GameState& state, const unsigned int inputCarry)
     {
-        const auto scoreDigit4 = _SimulateScore(state) ? (state.score % 1000) / 100 : 0;
-        const auto scoreDigit5 = _SimulateScore(state) ? (state.score % 100) / 10 : 0;
+        const auto scoreDigit4 = (state.score % 1000) / 100;
+        const auto scoreDigit5 = (state.score % 100) / 10;
 
         // Mystery input values, always seem to be constant.
         const auto mystery0379 = 0;
@@ -252,12 +252,9 @@ public:
         {
             ReactToBlockCollis(state);
 
-            if (_SimulateEnemies(state))
+            if (!state.justSpawnedPowerup)
             {
-                if (!state.justSpawnedPowerup)
-                {
-                    UpdateEnemyGate(state);
-                }
+                UpdateEnemyGate(state);
             }
 
             // TODO other updates
@@ -344,7 +341,7 @@ public:
             {
                 state.pendingScore += 50 * state.level;
             }
-            else if (!_SimulateGoldBlocks(state) || blockType != BlockType::Gold)
+            else if (blockType != BlockType::Gold)
             {
                 const auto scoreIndex = (static_cast<int>(blockType) >> 4) - 1;
                 state.pendingScore += Data::BlockScoreTable[scoreIndex];
@@ -612,7 +609,7 @@ public:
                     AdvanceOneBall(state, ball);
                     CheckBlockBossCollis(state, ball);
                     CheckPaddleCollis(state, ball);
-                    if (_SimulateEnemies(state)) CheckEnemyCollis(state, ball);
+                    CheckEnemyCollis(state, ball);
                     UpdateCeilCollisVSign(state, ball);
                     HandleBlockCollis(state, ball);
                     CheckBallLost(state, ball);
@@ -656,7 +653,7 @@ public:
             state.ownedPowerup = state.spawnedPowerup;
             state.spawnedPowerup = Powerup::None;
 
-            if(_SimulateScore(state)) state.pendingScore += 1000;
+            state.pendingScore += 1000;
 
             // TODO other powerups
             if (state.ownedPowerup == Powerup::Multiball)
@@ -1045,7 +1042,7 @@ public:
                     // Select either oneRight or oneDown as the collision side. By default pick
                     // oneDown, but if oneRight isn't gold, pick oneRight.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (!_SimulateGoldBlocks(state) || BlkType(state.blocks[index + 1]) != BlockType::Gold)
+                    if (BlkType(state.blocks[index + 1]) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneRight = true;
                     }
@@ -1185,7 +1182,7 @@ public:
 
                     // Select either thisBlock or oneDownRight as the collision side. By default pick
                     // oneDownRight, but if thisBlock isn't gold, pick thisBlock.
-                    if (!_SimulateGoldBlocks(state) || BlkType(state.blocks[index]) != BlockType::Gold)
+                    if (BlkType(state.blocks[index]) != BlockType::Gold)
                     {
                         state.blockCollisSide.thisBlock = true;
                     }
@@ -1303,7 +1300,7 @@ public:
                     // Select either thisBlock or oneDownRight as the collision side. By default pick
                     // thisBlock, but if it's gold and oneDownRight is not, switch to oneDownRight.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (_SimulateGoldBlocks(state) && BlkType(state.blocks[index]) == BlockType::Gold
+                    if (BlkType(state.blocks[index]) == BlockType::Gold
                         && BlkType(state.blocks[index + GameConsts::BlocksPerRow + 1]) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneDownRight = true;
@@ -1417,7 +1414,7 @@ public:
                     // Select either oneRight or oneDown as the collision side. By default pick
                     // oneRight, but if it's gold and oneDown is not, switch to oneDown.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (_SimulateGoldBlocks(state) && BlkType(state.blocks[index + 1]) == BlockType::Gold
+                    if (BlkType(state.blocks[index + 1]) == BlockType::Gold
                         && BlkType(state.blocks[index + GameConsts::BlocksPerRow]) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneDown = true;
@@ -1732,7 +1729,7 @@ public:
             if (index < GameConsts::BlockTableSize)
             {
                 auto& block = state.blocks[index];
-                if (!_SimulateGoldBlocks(state) || BlkType(block) != BlockType::Gold)
+                if (BlkType(block) != BlockType::Gold)
                 {
                     block = static_cast<uint8_t>(BlkType(block)) | BlkPowerup(block) | (BlkHits(block) - 1);
                     if (BlkHits(block) == 0)

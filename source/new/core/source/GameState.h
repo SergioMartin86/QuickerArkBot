@@ -196,21 +196,3 @@ struct GameState
     unsigned int _enemyMoveOptions = 0;
     int _queueEnemyDestruction = -1;
 };
-
-constexpr bool _SimulateEnemies(const GameState& state)
-{
-    const auto level = _CompileTimeLevel ? _Level : state.level;
-    return (level == 0 || EnemySimTable[level]);
-}
-
-constexpr bool _SimulateGoldBlocks(const GameState& state)
-{
-    const auto level = _CompileTimeLevel ? _Level : state.level;
-    return (level == 0 || GoldBlockTable[level]);
-}
-
-constexpr bool _SimulateScore(const GameState& state)
-{
-    const auto level = _CompileTimeLevel ? _Level : state.level;
-    return (level == 0 || SimulateScoreTable[level]);
-}
