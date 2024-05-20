@@ -16,24 +16,6 @@ struct Vel
     int vy = 0;
 };
 
-struct Rect
-{
-    unsigned int left = 0;
-    unsigned int right = 0;
-    unsigned int top = 0;
-    unsigned int bottom = 0;
-
-    unsigned int width()
-    {
-        return right - left;
-    }
-
-    unsigned int height()
-    {
-        return bottom - top;
-    }
-};
-
 struct SpeedTableRow
 {
     unsigned int cycleLen = 0;
@@ -209,13 +191,9 @@ struct GameState
     bool ceilCollis = true;
 
     // Simulation-specific data - not used by the actual game logic.
-    unsigned int _frame = 0;
-    Input _pendingInput;
     int _justMovedEnemy = -1;
     unsigned int _enemyMysteryInput = 0x77;
     unsigned int _enemyMoveOptions = 0;
-    bool _disablePaddleHitbox = false;
-    bool _disableBlockHitboxes = false;
     int _queueEnemyDestruction = -1;
 };
 

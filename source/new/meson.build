@@ -2,7 +2,6 @@
 
 quickerArkBotSrc =  [
   'core/source/GameData.cpp',
-  'core/source/GameOperations.cpp',
 ]
 
 quickerArkBotIncludeDirs = [

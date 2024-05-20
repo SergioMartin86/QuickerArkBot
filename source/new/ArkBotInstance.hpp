@@ -198,7 +198,7 @@ class EmuInstance : public EmuInstanceBase
     if (controller1 & 0b01000000) input |= LeftInput;
     if (controller1 & 0b10000000) input |= RightInput;
     if (controller1 & 0b00000001) input |= AInput;
-    _arkEngine.ExecuteInput(_arkState, input);
+    _arkEngine.AdvanceFrame(_arkState, input);
 
     if (_useVerification == false) return; 
 

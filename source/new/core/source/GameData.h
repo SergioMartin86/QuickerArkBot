@@ -21,14 +21,60 @@ extern unsigned int BlkHits(const Block block);
 extern unsigned int BlkPowerup(const Block block);
 extern BlockType BlkType(const Block block);
 
-bool InputA(const Input inp);
-bool InputB(const Input inp);
-bool InputLeft(const Input inp);
-bool InputRight(const Input inp);
-bool InputUp(const Input inp);
-bool InputDown(const Input inp);
-bool InputStart(const Input inp);
-bool InputSelect(const Input inp);
+inline bool InputA(const Input inp)
+{
+    return inp & AInput;
+}
+
+inline bool InputB(const Input inp)
+{
+    return inp & BInput;
+}
+
+inline bool InputLeft(const Input inp)
+{
+    return inp & LeftInput;
+}
+
+inline bool InputRight(const Input inp)
+{
+    return inp & RightInput;
+}
+
+inline bool InputUp(const Input inp)
+{
+    return inp & UpInput;
+}
+
+inline bool InputDown(const Input inp)
+{
+    return inp & DownInput;
+}
+
+inline bool InputStart(const Input inp)
+{
+    return inp & StartInput;
+}
+
+inline bool InputSelect(const Input inp)
+{
+    return inp & SelectInput;
+}
+
+inline unsigned int BlkHits(const Block block)
+{
+    return block & 7;
+}
+
+inline unsigned int BlkPowerup(const Block block)
+{
+    return block & 8;
+}
+
+inline BlockType BlkType(const Block block)
+{
+    return static_cast<BlockType>(block & 0xf0);
+}
 
 namespace Data
 {
