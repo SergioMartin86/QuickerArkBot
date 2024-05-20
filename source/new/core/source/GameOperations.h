@@ -1691,7 +1691,7 @@ public:
             state.speedStageCounter++;
             if (state.speedStageCounter == 256) state.speedStageCounter = 0;
 
-            for (int i = 0; i < Data::SpeedStageThresholds.size(); i++)
+            for (int i = 0; i < 16; i++)
             {
                 if (state.speedStageCounter == Data::SpeedStageThresholds[i]
                     && state.speedStageCounter > 0)

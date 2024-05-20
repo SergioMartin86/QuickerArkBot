@@ -2,48 +2,7 @@
 
 namespace Data
 {
-    std::vector<std::vector<unsigned int>> EnemySpawnTimerTable {
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0x0708,  0xe10 },
-        { 0,  0,  0 },
-        { 0,  0x708,  0xe10 },
-        { 0,  0x708,  0xe10 },
-        { 0,  0,  0x708 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0x708 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0x708,  0xe10 },
-        { 0,  0x708,  0xe10 },
-        { 0,  0,  0x708 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0,  0 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0,  0x708,  0xe10 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0x708,  0xe10,  0x1518 },
-        { 0xffff, 0xffff, 0xffff }
-    };
+
 
     std::vector<std::vector<Block>> LevelData {
         {},
@@ -819,62 +778,6 @@ namespace Data
         }
     };
 
-    std::vector<unsigned int> LevelBlockCount = {
-        0x0, 0x42, 0x42, 0x40, 0x70, 0x43, 0x3d, 0x44,
-        0x07, 0x22, 0x19, 0x31, 0x08, 0x38, 0x4d, 0x84,
-        0x3c, 0x2f, 0x2c, 0x2a, 0x14, 0x16, 0x40, 0x53,
-        0x35, 0x36, 0x0a, 0x42, 0x2d, 0x48, 0x37, 0x4e,
-        0x1a, 0x50, 0x3b, 0x34, 0x42
-    };
-
-    std::vector<unsigned int> StartingSpeedStage = {
-        7, 7, 7, 7, 7, 7, 7, 8,
-        7, 8, 6, 7, 6, 8, 7, 8,
-        6, 7, 7, 7, 7, 7, 8, 7,
-        7, 7, 8, 6, 8, 7, 7, 7,
-        7, 7, 7, 7, 7
-    };
-
-    std::vector<unsigned int> SpeedStageThresholds = {
-        0,    0xa,   0xf, 0x14, 0x1e, 0x28, 0x37, 0x50,
-        0x6e, 0x87, 0xa0, 0xb9, 0xd2, 0xe6, 0xf5, 0xff
-    };
-
-    std::vector<unsigned int> RngTable = {
-        0x57, 0x12, 0xf3, 0xbd, 0x33, 0x9c, 0x21, 0x4f,
-        0x61, 0xe7, 0x0f, 0xaa, 0x7e, 0x84, 0xc6, 0xde
-    };
-
-    std::vector<unsigned int> GateStateSignalValues = {
-        0, 0x90, 0xa0, 0x2d, 0x2d, 0, 0, 0xa0, 0x90, 0x80, 0xff
-    };
-
-    std::vector<unsigned int> GateTimerDurations = {
-        0, 8, 8, 8, 2, 0, 0, 8, 8, 0x10
-    };
-
-    std::vector<unsigned int> BlockScoreTable = {
-        50,  // White
-        60,
-        70,
-        80,  // Green
-        90,  // Red
-        100, // Orange
-        110, // Pink
-        120, // Blue
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0, // Gold (only used when optimizing away gold block logic)
-    };
-
-    std::vector<unsigned int> SpecialPowerupTable = {
-        0x07, 0xdf, 0x3d, 0xb9, 0x1b, 0x5e
-    };
-
     std::vector<SpeedTableRow> SteepSpeedTable = 
     {
         { 1, 1, 5, 0, { 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } },
@@ -938,19 +841,4 @@ namespace Data
         { 1, 4, 0, 0, { 1, 2, 1, 2, 1, 2, 1, 2, 0, 0, 0, 0 } },
     };
 
-    std::vector<unsigned int> CeilingBounceSpeedStage = {
-        0,
-        8, 8, 8, 0, 8, 8, 0, 0,
-        8, 7, 8, 8, 9, 7, 0, 7,
-        8, 8, 8, 0, 8, 0, 0, 0,
-        0, 0, 9, 0, 0, 8, 0, 0,
-        8, 8, 8, 8
-    };
-
-    std::vector<int> CircleMovementTable = {
-        2,  0,  2, -1,  2,  0,  2, -1,  2,  0,  2, -1,  2, -1,    2, -1,
-        2, -1,  2, -2,  2, -2,  2, -2,  2, -3,  2, -3,  1, -3,    1, -2,
-        1, -3,  1, -4, -1, -3, -1, -3, -2, -3, -2, -3, -2, -3,   -2, -2,
-        -2, -2, -2, -1, -2, -1, -2, -1, -2, -1, -2,  0, -2, -1, 0x80,  0,
-    };
 }
