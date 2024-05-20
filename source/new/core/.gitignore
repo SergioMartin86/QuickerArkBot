@@ -1,0 +1,12 @@
+# Build outputs
+x64
+*.exe
+*.exp
+*.ilk
+*.iobj
+*.ipdb
+*.lib
+*.pdb
+
+# Visual Studio stuff
+.vs

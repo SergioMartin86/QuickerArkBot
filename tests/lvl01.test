@@ -6,6 +6,7 @@
   "Controller 1 Type": "Joypad",
   "Controller 2 Type": "None",
   "Initial Level": 1,
+  "Initial Score": 0,
   "Differential Compression":
   {
     "Enabled": false,
