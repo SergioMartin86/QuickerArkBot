@@ -48,6 +48,7 @@ class EmuInstanceBase
 
     if (type == "None") { _controller.setController1Type(ark::Controller::controller_t::none); isTypeRecognized = true; }
     if (type == "Joypad") { _controller.setController1Type(ark::Controller::controller_t::joypad); isTypeRecognized = true; }
+    if (type == "Arkanoid") { _controller.setController1Type(ark::Controller::controller_t::arkanoid); isTypeRecognized = true; }
 
     if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
   }
@@ -58,7 +59,8 @@ class EmuInstanceBase
 
     if (type == "None") { _controller.setController2Type(ark::Controller::controller_t::none); isTypeRecognized = true; }
     if (type == "Joypad") { _controller.setController2Type(ark::Controller::controller_t::joypad); isTypeRecognized = true; }
-    
+    if (type == "Arkanoid") { _controller.setController2Type(ark::Controller::controller_t::arkanoid); isTypeRecognized = true; }
+
     if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
   }
 
