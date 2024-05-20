@@ -67,7 +67,8 @@ public:
 
   inline void setController1Type(const controller_t type) { _controller1Type = type; }
   inline void setController2Type(const controller_t type) { _controller2Type = type; }
-
+  inline controller_t getController1Type() const { return _controller1Type; }
+  inline controller_t getController2Type() const { return _controller2Type; }
   inline bool getPowerButtonState() const { return _input.power; }
   inline bool getResetButtonState() const { return _input.reset; }
   inline port_t getController1Code() const { return _input.port1; }
@@ -102,6 +103,8 @@ public:
     c = ss.get();
     if (c != '.' && c != 'F') return false;
     if (c == 'F') arkanoid.fire = true;
+
+    return true;
   }
 
   static bool parseJoyPadInput(uint8_t& code, std::istringstream& ss)

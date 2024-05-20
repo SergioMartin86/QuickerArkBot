@@ -195,24 +195,56 @@ class EmuInstance : public EmuInstanceBase
   {
     ark::Controller::port_t port1 = controller.getController1Code();
     ark::Controller::port_t port2 = controller.getController2Code();
+    bool fire = controller.getController1Arkanoid().fire;
+    bool position = controller.getController1Arkanoid().position;
+    uint8_t adjustedPosition = position + 2;
+    if (adjustedPosition < 16) adjustedPosition = 16;
+    if (adjustedPosition > 160) adjustedPosition = 160;
 
-    // Advancing arkbot
-    Input input = 0;
-    if (port1 & 0b01000000) input |= LeftInput;
-    if (port1 & 0b10000000) input |= RightInput;
-    if (port1 & 0b00000001) input |= AInput;
-    _arkEngine.ExecuteInput(_arkState, input);
+    if (controller.getController1Type() == ark::Controller::controller_t::joypad)
+    {
+      // Advancing arkbot
+      Input input = 0;
+      if (port1 & 0b01000000) input |= LeftInput;
+      if (port1 & 0b10000000) input |= RightInput;
+      if (port1 & 0b00000001) input |= AInput;
+      _arkEngine.ExecuteInput(_arkState, input);
+    }
+
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
+    {
+      // Advancing arkbot
+      Input input = 0;
+      if (fire) input |= AInput;
+      _arkEngine.ExecuteInput(_arkState, input);
+
+      // Now setting paddle position
+      _arkState.paddleX = adjustedPosition;
+    }
 
     if (_useVerification == false) return; 
+
+    // Getting quicknes input
+    uint32_t qInput = 0;
+    bool gameMode = _nes.get_low_mem()[0x000A];
+    if (controller.getController1Type() == ark::Controller::controller_t::joypad) qInput = port1;
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
+    {
+      if (fire && gameMode >= 7) qInput |= 0b00000001; // A, for in game
+      if (fire && gameMode < 7)  qInput |= 0b00001000; // S, for start menu
+    }
 
     // Advancing quickernes at the same time
     if (_doRendering == true) 
     {
-      _nes.emulate_frame(port1, port2);
+      _nes.emulate_frame(qInput, 0);
       saveBlit(&_nes, _curBlit, hqn::HQNState::NES_VIDEO_PALETTE, 0, 0, 0, 0);
     }
 
-    if (_doRendering == false) _nes.emulate_skip_frame(port1, port2);
+    if (_doRendering == false) _nes.emulate_skip_frame(qInput, 0);
+
+    // If using arkanoid controller, adjust position
+    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid) _nes.get_low_mem()[0x011A] = adjustedPosition;
   }
 
   void printInformation() const override
