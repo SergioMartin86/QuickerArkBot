@@ -68,12 +68,12 @@ public:
   inline void setController1Type(const controller_t type) { _controller1Type = type; }
   inline void setController2Type(const controller_t type) { _controller2Type = type; }
 
-  inline bool getPowerButtonState() { return _input.power; }
-  inline bool getResetButtonState() { return _input.reset; }
-  inline port_t getController1Code() { return _input.port1; }
-  inline port_t getController2Code() { return _input.port2; }
-  inline arkanoid_t getController1Arkanoid() { return _input.ark1; }
-  inline arkanoid_t getController2Arkanoid() { return _input.ark2; }
+  inline bool getPowerButtonState() const { return _input.power; }
+  inline bool getResetButtonState() const { return _input.reset; }
+  inline port_t getController1Code() const { return _input.port1; }
+  inline port_t getController2Code() const { return _input.port2; }
+  inline arkanoid_t getController1Arkanoid() const { return _input.ark1; }
+  inline arkanoid_t getController2Arkanoid() const { return _input.ark2; }
 
 
   private:

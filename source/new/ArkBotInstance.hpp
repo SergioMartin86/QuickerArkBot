@@ -191,13 +191,16 @@ class EmuInstance : public EmuInstanceBase
 
   uint8_t* getRamPointer() const override { return nullptr; }
 
-  void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) override
+  void advanceStateImpl(const ark::Controller& controller) override
   {
+    ark::Controller::port_t port1 = controller.getController1Code();
+    ark::Controller::port_t port2 = controller.getController2Code();
+
     // Advancing arkbot
     Input input = 0;
-    if (controller1 & 0b01000000) input |= LeftInput;
-    if (controller1 & 0b10000000) input |= RightInput;
-    if (controller1 & 0b00000001) input |= AInput;
+    if (port1 & 0b01000000) input |= LeftInput;
+    if (port1 & 0b10000000) input |= RightInput;
+    if (port1 & 0b00000001) input |= AInput;
     _arkEngine.AdvanceFrame(_arkState, input);
 
     if (_useVerification == false) return; 
@@ -205,11 +208,11 @@ class EmuInstance : public EmuInstanceBase
     // Advancing quickernes at the same time
     if (_doRendering == true) 
     {
-      _nes.emulate_frame(controller1, controller2);
+      _nes.emulate_frame(port1, port2);
       saveBlit(&_nes, _curBlit, hqn::HQNState::NES_VIDEO_PALETTE, 0, 0, 0, 0);
     }
 
-    if (_doRendering == false) _nes.emulate_skip_frame(controller1, controller2);
+    if (_doRendering == false) _nes.emulate_skip_frame(port1, port2);
   }
 
   void printInformation() const override

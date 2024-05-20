@@ -39,11 +39,7 @@ class EmuInstanceBase
     // Parsing reset
     if (_controller.getResetButtonState() == true) doSoftReset();
 
-    // Parsing Controllers
-    const auto controller1 = _controller.getController1Code();
-    const auto controller2 = _controller.getController2Code();
-
-    advanceStateImpl(controller1, controller2);
+    advanceStateImpl(_controller);
   }
 
   inline void setController1Type(const std::string& type)
@@ -121,7 +117,7 @@ class EmuInstanceBase
 
   protected:
 
- virtual void advanceStateImpl(const ark::Controller::port_t controller1, const ark::Controller::port_t controller2) = 0;
+ virtual void advanceStateImpl(const ark::Controller& controller) = 0;
 
   virtual void enableStateBlockImpl(const std::string& block) {};
   virtual void disableStateBlockImpl(const std::string& block) {};
