@@ -149,7 +149,7 @@ struct GameState
     Ball ball[3];
 
     // Block data.
-    Block blocks[GameConsts::BlockTableSize];
+    Block blocks[GameConsts::BlockTableSize - 33];
     unsigned int totalBlocks = 0x77;
     unsigned int currentBlocks = 0x77;
     unsigned int blockCollisCount = 0x77;

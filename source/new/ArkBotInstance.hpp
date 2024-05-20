@@ -253,7 +253,7 @@ class EmuInstance : public EmuInstanceBase
      }
 
      jaffarCommon::logger::log("[] Arkbot Block State:\n");
-     for (uint8_t i = 0; i < GameConsts::BlocksPerCol; i++)
+     for (uint8_t i = 0; i < GameConsts::BlocksPerCol-3; i++)
      {
       jaffarCommon::logger::log("[] ");
       for (uint8_t j = 0; j < GameConsts::BlocksPerRow; j++)

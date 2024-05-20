@@ -168,7 +168,7 @@ class EmuInstance : public EmuInstanceBase
 
     hash.Update(_arkState.score);
     hash.Update(_arkState.pendingScore);
-    hash.Update(_arkState.blocks);
+    hash.Update(&_arkState.blocks[11], 187);
  
     jaffarCommon::hash::hash_t result;
     hash.Finalize(reinterpret_cast<uint8_t *>(&result));
@@ -253,7 +253,7 @@ class EmuInstance : public EmuInstanceBase
      }
 
      jaffarCommon::logger::log("[] Arkbot Block State:\n");
-     for (uint8_t i = 0; i < GameConsts::BlocksPerCol; i++)
+     for (uint8_t i = 0; i < GameConsts::BlocksPerCol-3; i++)
      {
       jaffarCommon::logger::log("[] ");
       for (uint8_t j = 0; j < GameConsts::BlocksPerRow; j++)

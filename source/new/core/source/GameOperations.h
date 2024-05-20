@@ -15,6 +15,14 @@
 #include <vector>
 #include <initializer_list>
 
+static thread_local Block falseBlock = 0;
+inline Block& getBlock(Block* blocks, uint8_t index)
+{
+   if (index < 11) return falseBlock;
+   if (index >= 220 - 22) return falseBlock;
+   return blocks[index-11];
+}
+
 class GameOp
 {
 public:
@@ -149,9 +157,10 @@ public:
             state.currentBlocks = Data::LevelBlockCount[level];
             state.totalBlocks = state.currentBlocks;
 
-            for (int i = 0; i < GameConsts::BlockTableSize; i++)
+            for (int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
+            for (int i = 0; i < GameConsts::BlockTableSize - 33; i++)
             {
-                state.blocks[i] = Data::LevelData[level][i];
+                state.blocks[i] = Data::LevelData[level][i+11];
             }
         }
     }
@@ -1042,7 +1051,7 @@ public:
                     // Select either oneRight or oneDown as the collision side. By default pick
                     // oneDown, but if oneRight isn't gold, pick oneRight.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(state.blocks[index + 1]) != BlockType::Gold)
+                    if (BlkType(getBlock(state.blocks, index + 1)) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneRight = true;
                     }
@@ -1182,7 +1191,7 @@ public:
 
                     // Select either thisBlock or oneDownRight as the collision side. By default pick
                     // oneDownRight, but if thisBlock isn't gold, pick thisBlock.
-                    if (BlkType(state.blocks[index]) != BlockType::Gold)
+                    if (BlkType(getBlock(state.blocks, index)) != BlockType::Gold)
                     {
                         state.blockCollisSide.thisBlock = true;
                     }
@@ -1300,8 +1309,8 @@ public:
                     // Select either thisBlock or oneDownRight as the collision side. By default pick
                     // thisBlock, but if it's gold and oneDownRight is not, switch to oneDownRight.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(state.blocks[index]) == BlockType::Gold
-                        && BlkType(state.blocks[index + GameConsts::BlocksPerRow + 1]) != BlockType::Gold)
+                    if (BlkType(getBlock(state.blocks, index)) == BlockType::Gold
+                        && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow + 1)) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneDownRight = true;
                     }
@@ -1414,8 +1423,8 @@ public:
                     // Select either oneRight or oneDown as the collision side. By default pick
                     // oneRight, but if it's gold and oneDown is not, switch to oneDown.
                     const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(state.blocks[index + 1]) == BlockType::Gold
-                        && BlkType(state.blocks[index + GameConsts::BlocksPerRow]) != BlockType::Gold)
+                    if (BlkType(getBlock(state.blocks, index + 1)) == BlockType::Gold
+                        && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow)) != BlockType::Gold)
                     {
                         state.blockCollisSide.oneDown = true;
                     }
@@ -1494,7 +1503,7 @@ public:
                 return false;
             }
 
-            return (state.blocks[index] != Block(0));
+            return (getBlock(state.blocks, index) != Block(0));
         };
 
         return { isBlockPresent(index),
@@ -1728,7 +1737,7 @@ public:
             const auto index = cellY * GameConsts::BlocksPerRow + cellX + offset;
             if (index < GameConsts::BlockTableSize)
             {
-                auto& block = state.blocks[index];
+                auto& block = getBlock(state.blocks, index);
                 if (BlkType(block) != BlockType::Gold)
                 {
                     block = static_cast<uint8_t>(BlkType(block)) | BlkPowerup(block) | (BlkHits(block) - 1);
@@ -1819,7 +1828,7 @@ public:
                     const auto startIndex = GameConsts::BlocksPerRow * ((enemy.pos.y - GameConsts::FieldMinY) >> 3);
                     for (auto idx = startIndex; idx < startIndex + 36; idx++)
                     {
-                        if (idx < GameConsts::BlockTableSize && state.blocks[idx] != Block(0))
+                        if (idx < GameConsts::BlockTableSize && getBlock(state.blocks, idx) != Block(0))
                         {
                             return;
                         }
@@ -2142,14 +2151,14 @@ public:
         auto index = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
         index += indexOffset;
 
-        if (state.blocks[index] != Block(0))
+        if (getBlock(state.blocks, index) != Block(0))
         {
             return true;
         }
         else
         {
             if ((enemy.pos.x & 0xf) == 0) return false;
-            else if (state.blocks[index + 1] == Block(0)) return false;
+            else if (getBlock(state.blocks, index + 1) == Block(0)) return false;
             else return true;
         }
     }
@@ -2170,11 +2179,11 @@ public:
         auto index = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
         index += indexOffset;
 
-        if (state.blocks[index] != Block(0))
+        if (getBlock(state.blocks, index) != Block(0))
         {
             return true;
         }
-        else if (state.blocks[index + GameConsts::BlocksPerRow] != Block(0))
+        else if (getBlock(state.blocks, index + GameConsts::BlocksPerRow) != Block(0))
         {
             return true;
         }
@@ -2182,7 +2191,7 @@ public:
         {
             return false;
         }
-        else if (state.blocks[index + 2 * GameConsts::BlocksPerRow] == Block(0))
+        else if (getBlock(state.blocks, index + 2 * GameConsts::BlocksPerRow) == Block(0))
         {
             return false;
         }
