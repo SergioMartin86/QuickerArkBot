@@ -14,9 +14,15 @@ class Controller
 {
 public:
 
-  enum controller_t { none, joypad };
+  enum controller_t { none, joypad, arkanoid };
 
   typedef uint32_t port_t;
+
+  struct arkanoid_t
+  {
+    uint8_t position = 0;
+    bool fire = false;
+  };
 
   struct input_t
   {
@@ -24,6 +30,8 @@ public:
     bool reset = false;
     port_t port1 = 0;
     port_t port2 = 0;
+    arkanoid_t ark1 = { .position = 0, .fire = false };
+    arkanoid_t ark2 = { .position = 0, .fire = false };
   };
 
   inline bool parseInputString(const std::string& input)
@@ -41,10 +49,10 @@ public:
     isValid &= parseConsoleInputs(_input.reset, _input.power, ss);
 
     // Parsing controller 1 inputs
-    isValid &= parseControllerInputs(_controller1Type, _input.port1, ss);
+    isValid &= parseControllerInputs(_controller1Type, _input.port1, _input.ark1, ss);
 
     // Parsing controller 1 inputs
-    isValid &= parseControllerInputs(_controller2Type, _input.port2, ss);
+    isValid &= parseControllerInputs(_controller2Type, _input.port2, _input.ark2, ss);
 
     // End separator
     if (ss.get() != '|') isValid = false;
@@ -64,8 +72,37 @@ public:
   inline bool getResetButtonState() { return _input.reset; }
   inline port_t getController1Code() { return _input.port1; }
   inline port_t getController2Code() { return _input.port2; }
+  inline arkanoid_t getController1Arkanoid() { return _input.ark1; }
+  inline arkanoid_t getController2Arkanoid() { return _input.ark2; }
+
 
   private:
+
+  static bool parseArkanoidInput(arkanoid_t& arkanoid, std::istringstream& ss)
+  {
+    arkanoid.fire = false;
+    arkanoid.position = 0;
+    
+    char c = 0;
+    ss.get(); // Empty
+    ss.get(); // Empty
+
+    c = ss.get(); // Hundreds
+    if (c != ' ') arkanoid.position += 100 * ( (uint8_t)c - 48 );
+
+    c = ss.get(); // Tenths
+    if (c != ' ') arkanoid.position += 10 * ( (uint8_t)c - 48 );
+
+    c = ss.get(); // Units
+    if (c != ' ') arkanoid.position += (uint8_t)c - 48;
+
+    ss.get(); // Comma
+
+    // Fire
+    c = ss.get();
+    if (c != '.' && c != 'F') return false;
+    if (c == 'F') arkanoid.fire = true;
+  }
 
   static bool parseJoyPadInput(uint8_t& code, std::istringstream& ss)
   {
@@ -118,13 +155,19 @@ public:
     return true;
   }
 
-  static bool parseControllerInputs(const controller_t type, port_t& port, std::istringstream& ss)
+  static bool parseControllerInputs(const controller_t type, port_t& port, arkanoid_t& arkanoid, std::istringstream& ss)
   {
     // Parse valid flag
     bool isValid = true; 
  
     // If no controller assigned then, its port is all zeroes.
-    if (type == controller_t::none) { port = 0; return true; }
+    if (type == controller_t::none)
+    { 
+      port = 0;
+      arkanoid.fire = false;
+      arkanoid.position = 0;
+      return true;
+    }
 
     // Controller separator
     if (ss.get() != '|') isValid = false;
@@ -144,6 +187,13 @@ public:
       // Adding joypad signature
       // Per https://www.nesdev.org/wiki/Standard_controller, the joypad reports 1s after the first 8 bits
       port |= ~0xFF;
+    }
+
+    // If arkanoid, parse its code now
+    if (type == controller_t::arkanoid) 
+    {
+      // Parsing joypad code
+      isValid &= parseArkanoidInput(arkanoid, ss);
     }
 
     // Return valid flag
