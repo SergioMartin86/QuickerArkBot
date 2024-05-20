@@ -45,6 +45,13 @@ class EmuInstance : public EmuInstanceBase
 
       // Allocating video buffer
       _video_buffer = (uint8_t *)malloc(getBlitSize());
+
+      // Setting video buffer
+      _nes.set_pixels(_video_buffer, image_width + 8);
+
+      // Loading Emulator instance HQN
+      _hqnState.setEmulatorPointer(&_nes);
+      _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
     }
 
     // Initializing Arkbot
@@ -60,13 +67,6 @@ class EmuInstance : public EmuInstanceBase
   void initializeVideoOutput() override
   {
     _window = launchOutputWindow();
-
-    // Setting video buffer
-    _nes.set_pixels(_video_buffer, image_width + 8);
-
-    // Loading Emulator instance HQN
-    _hqnState.setEmulatorPointer(&_nes);
-    _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
 
     // Enabling emulation rendering
     enableRendering();
@@ -261,6 +261,8 @@ class EmuInstance : public EmuInstanceBase
 
     if (_doRendering == false) _nes.emulate_skip_frame(qInput, 0);
   }
+
+  GameState* getGameState() { return &_arkState; }
 
   void printInformation() const override
   {
