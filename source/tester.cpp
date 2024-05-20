@@ -186,8 +186,6 @@ int main(int argc, char *argv[])
   printf("[]   + Fixed Diff State Size:              %lu\n", fixedDiferentialStateSize);
   printf("[]   + Full Diff State Size:               %lu\n", fullDifferentialStateSize);
   }
-  jaffarCommon::logger::log("[] Internal Information:\n");
-  e.printInformation();
 
   // If warmup is enabled, run it now. This helps in reducing variation in performance results due to CPU throttling
   if (useWarmUp)
@@ -289,6 +287,9 @@ int main(int argc, char *argv[])
   {
   printf("[] Differential State Max Size Detected:   %lu\n", differentialStateMaxSizeDetected);    
   }
+  jaffarCommon::logger::log("[] Internal Information:\n");
+  e.printInformation();
+  
   // If saving hash, do it now
   if (hashOutputFile != "") jaffarCommon::file::saveStringToFile(std::string(hashStringBuffer), hashOutputFile.c_str());
 
