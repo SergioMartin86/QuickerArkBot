@@ -66,17 +66,6 @@ class EmuInstanceBase
     if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
   }
 
-  inline jaffarCommon::hash::hash_t getStateHash() const
-  {
-    MetroHash128 hash;
-    
-    // auto workRam = getRamPointer();
-
-    jaffarCommon::hash::hash_t result;
-    hash.Finalize(reinterpret_cast<uint8_t *>(&result));
-    return result;
-  }
-
   void initialize(const std::string& romFilePath)
   {
     initializeImpl(romFilePath);
@@ -119,6 +108,7 @@ class EmuInstanceBase
 
   // Virtual functions
 
+  virtual jaffarCommon::hash::hash_t getStateHash() const = 0;
   virtual void updateRenderer() = 0;
   virtual void serializeState(jaffarCommon::serializer::Base& s) const = 0;
   virtual void deserializeState(jaffarCommon::deserializer::Base& d) = 0;

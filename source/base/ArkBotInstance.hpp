@@ -120,6 +120,61 @@ class EmuInstance : public EmuInstanceBase
   void enableStateBlockImpl(const std::string& block) override { _nes.enableStateBlock(block); };
   void disableStateBlockImpl(const std::string& block) override { _nes.disableStateBlock(block); };
 
+  inline jaffarCommon::hash::hash_t getStateHash() const 
+  {
+    MetroHash128 hash;
+
+    hash.Update(_arkState.ball[0].pos);
+    hash.Update(_arkState.ball[0].vel);
+    hash.Update(_arkState.ball[0].vSign);
+    hash.Update(_arkState.ball[0].angle);
+    hash.Update(_arkState.ball[0].cycle);
+    hash.Update(_arkState.ball[0].exists);
+    hash.Update(_arkState.ball[0].xCollis);
+    hash.Update(_arkState.ball[0].yCollis);
+    hash.Update(_arkState.ball[0].speedMult);
+    hash.Update(_arkState.ball[0].speedStage);
+    hash.Update(_arkState.ball[0].speedStageM);
+    hash.Update(_arkState.ball[0].speedRowIdx);
+    hash.Update(_arkState.ball[0]._paddleCollis);
+
+    hash.Update(_arkState.ball[1].pos);
+    hash.Update(_arkState.ball[1].vel);
+    hash.Update(_arkState.ball[1].vSign);
+    hash.Update(_arkState.ball[1].angle);
+    hash.Update(_arkState.ball[1].cycle);
+    hash.Update(_arkState.ball[1].exists);
+    hash.Update(_arkState.ball[1].xCollis);
+    hash.Update(_arkState.ball[1].yCollis);
+    hash.Update(_arkState.ball[1].speedMult);
+    hash.Update(_arkState.ball[1].speedStage);
+    hash.Update(_arkState.ball[1].speedStageM);
+    hash.Update(_arkState.ball[1].speedRowIdx);
+    hash.Update(_arkState.ball[1]._paddleCollis);
+
+    hash.Update(_arkState.ball[2].pos);
+    hash.Update(_arkState.ball[2].vel);
+    hash.Update(_arkState.ball[2].vSign);
+    hash.Update(_arkState.ball[2].angle);
+    hash.Update(_arkState.ball[2].cycle);
+    hash.Update(_arkState.ball[2].exists);
+    hash.Update(_arkState.ball[2].xCollis);
+    hash.Update(_arkState.ball[2].yCollis);
+    hash.Update(_arkState.ball[2].speedMult);
+    hash.Update(_arkState.ball[2].speedStage);
+    hash.Update(_arkState.ball[2].speedStageM);
+    hash.Update(_arkState.ball[2].speedRowIdx);
+    hash.Update(_arkState.ball[2]._paddleCollis);
+
+    hash.Update(_arkState.score);
+    hash.Update(_arkState.pendingScore);
+    hash.Update(_arkState.blocks);
+ 
+    jaffarCommon::hash::hash_t result;
+    hash.Finalize(reinterpret_cast<uint8_t *>(&result));
+    return result;
+  }
+
   void doSoftReset() override
   {
     _arkEngine.AdvanceToLevel(_arkState, _initialLevel);

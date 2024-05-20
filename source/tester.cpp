@@ -186,7 +186,9 @@ int main(int argc, char *argv[])
   printf("[]   + Fixed Diff State Size:              %lu\n", fixedDiferentialStateSize);
   printf("[]   + Full Diff State Size:               %lu\n", fullDifferentialStateSize);
   }
-  
+  jaffarCommon::logger::log("[] Internal Information:\n");
+  e.printInformation();
+
   // If warmup is enabled, run it now. This helps in reducing variation in performance results due to CPU throttling
   if (useWarmUp)
   {

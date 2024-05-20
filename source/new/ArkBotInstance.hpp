@@ -48,6 +48,14 @@ class EmuInstance : public EmuInstanceBase
   {
   }
 
+  inline jaffarCommon::hash::hash_t getStateHash() const 
+  {
+    MetroHash128 hash;
+    jaffarCommon::hash::hash_t result;
+    hash.Finalize(reinterpret_cast<uint8_t *>(&result));
+    return result;
+  }
+
   void deserializeState(jaffarCommon::deserializer::Base& d) override
   {
   }
