@@ -194,13 +194,6 @@ class EmuInstance : public EmuInstanceBase
   void advanceStateImpl(const ark::Controller& controller) override
   {
     ark::Controller::port_t port1 = controller.getController1Code();
-    ark::Controller::port_t port2 = controller.getController2Code();
-    bool fire = controller.getController1Arkanoid().fire;
-    uint8_t position = controller.getController1Arkanoid().position;
-
-    uint8_t adjustedPosition = position + 2;
-    if (adjustedPosition < 16) adjustedPosition = 16;
-    if (adjustedPosition > 160) adjustedPosition = 160;
 
     if (controller.getController1Type() == ark::Controller::controller_t::joypad)
     {
@@ -212,8 +205,19 @@ class EmuInstance : public EmuInstanceBase
       _arkEngine.ExecuteInput(_arkState, input);
     }
 
+    bool fire = false;
+    uint8_t adjustedPosition = 0;
     if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
     {
+      // Gathering arkanoid controller info
+      fire = controller.getController1Arkanoid().fire;
+      uint8_t position = controller.getController1Arkanoid().position;
+
+      // Adjusting arkanoid controller position
+      adjustedPosition = position + 2;
+      if (adjustedPosition < 16) adjustedPosition = 16;
+      if (adjustedPosition > 160) adjustedPosition = 160;
+
       // Now setting paddle position
       _arkState.paddleX = adjustedPosition;
 
