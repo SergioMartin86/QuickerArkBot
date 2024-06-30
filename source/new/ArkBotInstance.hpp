@@ -37,10 +37,12 @@ class EmuInstance : public EmuInstanceBase
     // Only load quickerNES if verification is needed
     if (_useVerification)
     {
+      // Loading rom data file
       std::string romData;
-      jaffarCommon::file::loadStringFromFile(romData, romFilePath);
+      auto success = jaffarCommon::file::loadStringFromFile(romData, romFilePath);
+      if (success == false) JAFFAR_THROW_LOGIC("Could not find rom file: %s\n", romFilePath.c_str());
 
-      // Loading rom data
+      // Loading rom data into the emulator
       _nes.load_ines((uint8_t*)romData.data());
 
       // Allocating video buffer
@@ -52,6 +54,11 @@ class EmuInstance : public EmuInstanceBase
       // Loading Emulator instance HQN
       _hqnState.setEmulatorPointer(&_nes);
       _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
+
+      // Advance quickerNES to the start of a stage
+      for(size_t i = 0; i < 12; i++) _nes.emulate_frame(0,0);
+      _nes.emulate_frame(0b00001000,0);
+      for(size_t i = 0; i < 553; i++) _nes.emulate_frame(0,0);
     }
 
     // Initializing Arkbot
@@ -189,7 +196,7 @@ class EmuInstance : public EmuInstanceBase
 
   std::string getCoreName() const override { return "QuickerArkBot"; }
 
-  uint8_t* getRamPointer() const override { return nullptr; }
+  uint8_t* getRamPointer() const override { return _nes.get_low_mem(); }
 
   void advanceStateImpl(const ark::Controller& controller) override
   {
@@ -270,6 +277,13 @@ class EmuInstance : public EmuInstanceBase
 
   void printInformation() const override
   {
+     jaffarCommon::logger::log("[] Arkbot Round: %u\n", _arkState.level);
+     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Round: %u\n", _nes.get_low_mem()[0x001A]);
+
+
+     jaffarCommon::logger::log("[] Arkbot Game Mode: %u\n", _arkState.opState);
+     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Game Mode: %u\n", _nes.get_low_mem()[0x000A]);
+
      jaffarCommon::logger::log("[] Arkbot   Paddle X: %u\n", _arkState.paddleX);
      if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Paddle X: %u\n", _nes.get_low_mem()[0x011A]);
 
