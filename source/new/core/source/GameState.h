@@ -56,7 +56,6 @@ struct Ball
 };
 
 typedef uint8_t Block;
-typedef uint8_t Input;
 
 struct Proximity
 {
@@ -138,8 +137,8 @@ struct GameState
     OperationalState opState = OperationalState::Invalid;
 
     // Input data.
-    Input buttons = 0x77;
-    Input prevButtons = 0x77;
+    uint8_t potPosX = 0x00;
+    bool pressFire = false;
 
 	// Paddle values.
 	unsigned int paddleX = 0x77;

@@ -53,8 +53,8 @@ public:
 
         state.level = level;
 
-        state.buttons = 0;
-        state.prevButtons = 0;
+        state.potPosX = 0;
+        state.pressFire = false;
 
         state.paddleCollis = false;
         state.blockCollisCount = 0;
@@ -113,14 +113,14 @@ public:
         InitPaddleAndBall(state, state.level);
     }
 
-    static inline void AdvanceFrame(GameState& state, const Input& input)
+    static inline void AdvanceFrame(GameState& state, const uint8_t potPosX, const bool fire)
     {
         state._justMovedEnemy = -1;
         state._enemyMoveOptions = 0;
         state._enemyMysteryInput = 0x77;
 
         RefreshMiscState(state);
-        ProcessInput(state, input);
+        ProcessInput(state, potPosX, fire);
         UpdateScore(state);
         CheckPowerupCanSpawn(state);
         UpdateEnemies(state);
@@ -317,10 +317,15 @@ public:
         }
     }
 
-    static inline void ProcessInput(GameState& state, const Input& input)
+    static inline void ProcessInput(GameState& state, const uint8_t potPosX, const bool fire)
     {
-        state.prevButtons = state.buttons;
-        state.buttons = input;
+              // Adjusting arkanoid controller position
+      uint8_t adjustedPosition = potPosX + 2;
+      if (adjustedPosition < 16) adjustedPosition = 16;
+      if (adjustedPosition > 160) adjustedPosition = 160;
+
+        state.potPosX = adjustedPosition;
+        state.pressFire = fire;
     }
 
     static inline void UpdateScore(GameState& state)
@@ -531,10 +536,7 @@ public:
 
     static inline void CheckLaunchBall(GameState& state)
     {
-        const auto aButtonJustPressed = (InputA(state.buttons) && !InputA(state.prevButtons));
-        // TODO auto-launch flag
-
-        if (aButtonJustPressed && state.opState == OperationalState::BallNotLaunched)
+        if (state.pressFire && state.opState == OperationalState::BallNotLaunched)
         {
             // TODO clear auto-launch
 
@@ -550,47 +552,17 @@ public:
         // TODO other checks?
         if (!_Pedantic || (ballsExist && state.opState != OperationalState::Paused && state.currentBlocks > 0))
         {
-            if (InputLeft(state.buttons) && !InputRight(state.buttons))
-            {
-                DoPaddleMove(state, -3);
-            }
-            else if (InputRight(state.buttons) && !InputLeft(state.buttons))
-            {
-                DoPaddleMove(state, 3);
-            }
+            DoPaddleMove(state, state.potPosX);
         }
     }
 
-    static inline void DoPaddleMove(GameState& state, int delta)
+    static inline void DoPaddleMove(GameState& state, int potPosX)
     {
-        if (_Pedantic)
-        {
-            auto ballPaddleDelta = state.ball[0].pos.x - state.paddleX;
+      // Now setting paddle position
+      state.paddleX = potPosX;
 
-            state.paddleX += delta;
-            MathUtil::Clamp(state.paddleX, GameConsts::PaddleMin, GameConsts::PaddleMax);
-
-            if (state.opState == OperationalState::BallNotLaunched)
-            {
-                // If the ball is attached to the paddle, move it with the paddle.
-                state.ball[0].pos.x = state.paddleX + ballPaddleDelta;
-
-                // Clamp the ball to the field edges. This is independent of the paddle,
-                // so the ball is allowed to move to a different spot on the paddle with
-                // this operation.
-                MathUtil::Clamp(state.ball[0].pos.x, GameConsts::FieldMinX, GameConsts::FieldMaxX);
-            }
-        }
-        else
-        {
-            state.paddleX += delta;
-            MathUtil::Clamp(state.paddleX, GameConsts::PaddleMin, GameConsts::PaddleMax);
-
-            if (state.opState == OperationalState::BallNotLaunched)
-            {
-                state.ball[0].pos.x += delta;
-            }
-        }
+      // If  we still have the ball, we bring it with us
+      if (state.opState == OperationalState::BallNotLaunched) state.ball[0].pos.x = potPosX + 16;
     }
 
     static inline void UpdateActiveBalls(GameState& state)

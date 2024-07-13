@@ -4,6 +4,8 @@
 
 #include <vector>
 
+typedef uint8_t Input;
+
 static const Input NoInput = 0;
 static const Input AInput = 0x80;
 static const Input BInput = 0x40;

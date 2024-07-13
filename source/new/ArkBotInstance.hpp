@@ -202,42 +202,20 @@ class EmuInstance : public EmuInstanceBase
   {
     ark::Controller::port_t port1 = controller.getController1Code();
 
-    if (controller.getController1Type() == ark::Controller::controller_t::joypad)
-    {
-      // Advancing arkbot
-      Input input = 0;
-      if (port1 & 0b01000000) input |= LeftInput;
-      if (port1 & 0b10000000) input |= RightInput;
-      if (port1 & 0b00000001) input |= AInput;
-      _arkEngine.AdvanceFrame(_arkState, input);
-    }
-
     bool fire = false;
-    uint8_t adjustedPosition = 0;
     if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
     {
       // Gathering arkanoid controller info
       fire = controller.getController1Arkanoid().fire;
       uint8_t position = controller.getController1Arkanoid().position;
 
-      // Adjusting arkanoid controller position
-      adjustedPosition = position + 2;
-      if (adjustedPosition < 16) adjustedPosition = 16;
-      if (adjustedPosition > 160) adjustedPosition = 160;
-
-      // Now setting paddle position
-      _arkState.paddleX = adjustedPosition;
-
-      // If  we still have the ball, we bring it with us
-      if (_arkState.opState == OperationalState::BallNotLaunched) _arkState.ball[0].pos.x = adjustedPosition + 16;
-      
       // Advancing arkbot
-      Input input = 0;
-      if (fire) input |= AInput;
-      _arkEngine.AdvanceFrame(_arkState, input);
+      _arkEngine.AdvanceFrame(_arkState, position, fire);
     }
 
     if (_useVerification == false) return; 
+
+    uint8_t adjustedPosition = 0;
 
     // Getting quicknes input
     uint32_t qInput = 0;
@@ -280,9 +258,11 @@ class EmuInstance : public EmuInstanceBase
      jaffarCommon::logger::log("[] Arkbot Round: %u\n", _arkState.level);
      if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Round: %u\n", _nes.get_low_mem()[0x001A]);
 
-
      jaffarCommon::logger::log("[] Arkbot Game Mode: %u\n", _arkState.opState);
      if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Game Mode: %u\n", _nes.get_low_mem()[0x000A]);
+
+     jaffarCommon::logger::log("[] PowerUp Type: %u\n", _arkState.spawnedPowerup);
+     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES PowerUp Type: %u\n", _nes.get_low_mem()[0x008C]);
 
      jaffarCommon::logger::log("[] Arkbot   Paddle X: %u\n", _arkState.paddleX);
      if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Paddle X: %u\n", _nes.get_low_mem()[0x011A]);
