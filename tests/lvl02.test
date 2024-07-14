@@ -1,12 +1,13 @@
 {
   "Initial State File": "",
-  "Initial Sequence File": "lvl01.arkanoid.initial.sol",
+  "Initial Sequence File": "",
   "Disable State Blocks": [ ],
-  "Rom File Path": "Arkanoid (U) [!].nes",
+  "Rom File Path": "",
   "Controller 1 Type": "Arkanoid",
   "Controller 2 Type": "None",
-  "Initial Level": 1,
-  "Initial Score": 0,
+  "Initial Level": 2,
+  "Initial Score": 7350,
+  "Expected Score": 14630,
   "Differential Compression":
   {
     "Enabled": false,

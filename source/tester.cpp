@@ -90,6 +90,9 @@ int main(int argc, char *argv[])
   // Getting inital score
   unsigned int initialScore = jaffarCommon::json::getNumber<unsigned int>(configJs, "Initial Score");
 
+  // Getting expected score
+  unsigned int expectedScore = jaffarCommon::json::getNumber<unsigned int>(configJs, "Expected Score");
+
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
 
@@ -275,6 +278,9 @@ int main(int argc, char *argv[])
   // Calculating final state hash
   auto result = e.getStateHash();
 
+  // Getting final score
+  auto finalScore = e.getScore();
+
   // Creating hash string
   char hashStringBuffer[256];
   sprintf(hashStringBuffer, "0x%lX%lX", result.first, result.second);
@@ -282,6 +288,7 @@ int main(int argc, char *argv[])
   // Printing time information
   printf("[] Elapsed time:                           %3.3fs\n", (double)dt * 1.0e-9);
   printf("[] Performance:                            %.3f inputs / s\n", (double)sequenceLength / elapsedTimeSeconds);
+  printf("[] Final Score:                            %lu\n", finalScore);
   printf("[] Final State Hash:                       %s\n", hashStringBuffer);
   if (differentialCompressionEnabled == true)
   {
@@ -293,6 +300,13 @@ int main(int argc, char *argv[])
   // If saving hash, do it now
   if (hashOutputFile != "") jaffarCommon::file::saveStringToFile(std::string(hashStringBuffer), hashOutputFile.c_str());
 
-  // If reached this point, everything ran ok
+  // If reached this point, everything ran ok. Check expected score
+  if (finalScore != expectedScore)
+  {
+    jaffarCommon::logger::log("[] Test Failed. Score (%lu) != Expected (%lu)\n", finalScore, expectedScore);
+    return -1;
+  }
+
+
   return 0;
 }

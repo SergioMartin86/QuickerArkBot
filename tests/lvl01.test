@@ -1,12 +1,13 @@
 {
   "Initial State File": "",
-  "Initial Sequence File": "lvl02.joypad.initial.sol",
+  "Initial Sequence File": "",
   "Disable State Blocks": [ ],
-  "Rom File Path": "Arkanoid (U) [!].nes",
-  "Controller 1 Type": "Joypad",
+  "Rom File Path": "",
+  "Controller 1 Type": "Arkanoid",
   "Controller 2 Type": "None",
-  "Initial Level": 2,
-  "Initial Score": 7050,
+  "Initial Level": 1,
+  "Initial Score": 0,
+  "Expected Score": 7350,
   "Differential Compression":
   {
     "Enabled": false,

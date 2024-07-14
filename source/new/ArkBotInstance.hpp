@@ -54,11 +54,6 @@ class EmuInstance : public EmuInstanceBase
       // Loading Emulator instance HQN
       _hqnState.setEmulatorPointer(&_nes);
       _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
-
-      // Advance quickerNES to the start of a stage
-      for(size_t i = 0; i < 12; i++) _nes.emulate_frame(0,0);
-      _nes.emulate_frame(0b00001000,0);
-      for(size_t i = 0; i < 553; i++) _nes.emulate_frame(0,0);
     }
 
     // Initializing Arkbot
@@ -203,11 +198,12 @@ class EmuInstance : public EmuInstanceBase
     ark::Controller::port_t port1 = controller.getController1Code();
 
     bool fire = false;
+    uint8_t position = 0;
     if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
     {
       // Gathering arkanoid controller info
       fire = controller.getController1Arkanoid().fire;
-      uint8_t position = controller.getController1Arkanoid().position;
+      position = controller.getController1Arkanoid().position;
 
       // Advancing arkbot
       _arkEngine.AdvanceFrame(_arkState, position, fire);
@@ -215,7 +211,10 @@ class EmuInstance : public EmuInstanceBase
 
     if (_useVerification == false) return; 
 
-    uint8_t adjustedPosition = 0;
+    // Adjusting arkanoid controller position
+    uint8_t adjustedPosition = position + 2;
+    if (adjustedPosition < 16) adjustedPosition = 16;
+    if (adjustedPosition > 160) adjustedPosition = 160;
 
     // Getting quicknes input
     uint32_t qInput = 0;
@@ -252,6 +251,11 @@ class EmuInstance : public EmuInstanceBase
   }
 
   GameState* getGameState() { return &_arkState; }
+
+  size_t getScore() const override
+  {
+   return (size_t)_arkState.score;
+  }
 
   void printInformation() const override
   {

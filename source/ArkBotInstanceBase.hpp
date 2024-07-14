@@ -117,6 +117,7 @@ class EmuInstanceBase
   virtual std::string getCoreName() const = 0;
 
   virtual void printInformation() const = 0;
+  virtual size_t getScore() const { return 0; }
 
   protected:
 

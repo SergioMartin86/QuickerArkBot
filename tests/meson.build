@@ -4,17 +4,17 @@ bash = find_program('bash')
 testTimeout = 240
 
 testSet = [ 
-  'lvl01.joypad',
-  'lvl02.joypad',
-  'lvl01.arkanoid'
+  'lvl01',
+  'lvl02',
+  'lvl03'
 ]
 
 # Adding tests to the suite
 foreach testFile : testSet
   test(testFile,
-       bash,
+       quickerArkBotTester,
        workdir : meson.current_source_dir(),
        timeout: testTimeout,
-       args : [ 'run_test.sh', baseArkBotTester.path(),  quickerArkBotTester.path(), testFile + '.test', testFile + '.sol' ],
+       args : [  testFile + '.test', testFile + '.sol' ],
        suite : [ 'arkanoid' ])
 endforeach
