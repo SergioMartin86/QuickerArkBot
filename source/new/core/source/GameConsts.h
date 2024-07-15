@@ -1,32 +1,29 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 namespace GameConsts
 {
-    const unsigned int FieldMinX = 0x10;
-    const unsigned int FieldMaxX = 0xbc;
-    const unsigned int FieldMinY = 0x10;
-    const unsigned int FieldMaxY = 240;
-
-    const unsigned int PaddleSpeed = 3;
-    const unsigned int PaddleTop = 208;
-    const unsigned int PaddleWidth = 28;
-    const unsigned int PaddleHeight = 8;
-    const unsigned int PaddleMin = 16;
-    const unsigned int PaddleRightEdgeMin = PaddleMin + 8 + 8 + 8 + 8;
-    const unsigned int PaddleMax = 160;
-    const unsigned int PaddleStart = 0x58;
-
-    const unsigned int BlocksPerRow = 11;
-    const unsigned int BlocksPerCol = 20;
-    const unsigned int BlockTableSize = BlocksPerRow * BlocksPerCol;
-    const unsigned int BlockWidth = 16;
-    const unsigned int BlockHeight = 8;
-
-    const unsigned int MaxBlocks = BlocksPerRow * 40;
-
-    const unsigned int BossLevel = 0x24;
+    const uint8_t FieldMinX = 0x10;
+    const uint8_t FieldMaxX = 0xbc;
+    const uint8_t FieldMinY = 0x10;
+    const uint8_t FieldMaxY = 240;
+    const uint8_t PaddleSpeed = 3;
+    const uint8_t PaddleTop = 208;
+    const uint8_t PaddleWidth = 28;
+    const uint8_t PaddleHeight = 8;
+    const uint8_t PaddleMin = 16;
+    const uint8_t PaddleRightEdgeMin = PaddleMin + 8 + 8 + 8 + 8;
+    const uint8_t PaddleMax = 160;
+    const uint8_t PaddleStart = 0x58;
+    const uint8_t BlocksPerRow = 11;
+    const uint8_t BlocksPerCol = 20;
+    const uint16_t BlockTableSize = BlocksPerRow * BlocksPerCol;
+    const uint8_t BlockWidth = 16;
+    const uint8_t BlockHeight = 8;
+    const uint16_t MaxBlocks = BlocksPerRow * 40;
+    const uint8_t BossLevel = 0x24;
 
     /*
     Block information
@@ -48,9 +45,9 @@ namespace GameConsts
      powerup flag
     */
 
-    const unsigned int BlockHealthNibble = 0x7;
-    const unsigned int BlockPowerupBit = 0x8;
-    const unsigned int BlockTypeNibble = 0xF0;
+    const uint8_t BlockHealthNibble = 0x7;
+    const uint8_t BlockPowerupBit = 0x8;
+    const uint8_t BlockTypeNibble = 0xF0;
 }
 
 enum class BlockType

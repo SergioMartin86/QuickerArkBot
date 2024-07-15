@@ -6,24 +6,24 @@
 
 struct Point
 {
-	unsigned int x = 0;
-	unsigned int y = 0;
+	uint8_t x = 0;
+	uint8_t y = 0;
 };
 
 struct Vel
 {
-    int vx = 0;
-    int vy = 0;
+    int8_t vx = 0;
+    int8_t vy = 0;
 };
 
 struct SpeedTableRow
 {
-    unsigned int cycleLen = 0;
-    unsigned int speedMult = 0;
-    unsigned int speedReduction = 0;
-    unsigned int _unused = 0;
+    uint8_t cycleLen = 0;
+    uint8_t speedMult = 0;
+    uint8_t speedReduction = 0;
+    uint8_t _unused = 0;
 
-    unsigned int vel[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    uint8_t vel[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 };
 
 struct Ball
@@ -35,7 +35,7 @@ struct Ball
 
     Angle angle = Angle::Invalid;
 
-    unsigned int cycle = 0x77;
+    uint8_t cycle = 0x77;
 
     bool exists = true;
 
@@ -43,13 +43,13 @@ struct Ball
     bool yCollis = true;
 
     // This is part of the ball data since it varies based on the angle.
-    unsigned int speedMult = 0x77;
+    uint8_t speedMult = 0x77;
 
-    unsigned int speedStage = 0x77;
-    unsigned int speedStageM = 0x77;
+    uint8_t speedStage = 0x77;
+    uint8_t speedStageM = 0x77;
 
     SpeedTableRow* speedRow = nullptr;
-    unsigned int speedRowIdx = 0;
+    uint8_t speedRowIdx = 0;
 
     // The game doesn't track this but it's useful for the AI.
     bool _paddleCollis = false;
@@ -69,24 +69,24 @@ struct Enemy
 {
     bool active = true;
     bool exiting = true;
-    unsigned int destrFrame = 0x77;
+    uint8_t destrFrame = 0x77;
     Point pos = { 0x77, 0x77 };
     MovementType movementType = MovementType::Circling;
-    unsigned int moveTimer = 0x77;
-    unsigned int moveDir = 0x77;
-    unsigned int descentTimer = 0x77;
-    unsigned int animTimer = 0x77;
-    unsigned int circleStage = 0x77;
+    uint8_t moveTimer = 0x77;
+    uint8_t moveDir = 0x77;
+    uint8_t descentTimer = 0x77;
+    uint8_t animTimer = 0x77;
+    uint8_t circleStage = 0x77;
     CircleHalf circleHalf = CircleHalf::Top;
     CircleDir circleDir = CircleDir::Counterclockwise;
 
-    unsigned int _id = 0x77;
+    uint8_t _id = 0x77;
 };
 
 // Special flags to control simulation behavior.
 // TODO use templates instead
 
-constexpr unsigned int _Level = 1;
+constexpr uint8_t _Level = 1;
 constexpr bool _CompileTimeLevel = false;
 
 // Do extra updates and checks done by the original game engine, that aren't
@@ -141,7 +141,7 @@ struct GameState
     bool pressFire = false;
 
 	// Paddle values.
-	unsigned int paddleX = 0x77;
+	uint8_t paddleX = 0x77;
     bool paddleCollis = true;
 
 	// Ball data.
@@ -149,9 +149,9 @@ struct GameState
 
     // Block data.
     Block blocks[GameConsts::BlockTableSize - 33];
-    unsigned int totalBlocks = 0x77;
-    unsigned int currentBlocks = 0x77;
-    unsigned int blockCollisCount = 0x77;
+    uint8_t totalBlocks = 0x77;
+    uint8_t currentBlocks = 0x77;
+    uint8_t blockCollisCount = 0x77;
     Proximity blockCollisSide = { true, true, true, true };
     Block justHitBlock[3] = { 0x77, 0x77, 0x77 };
     Point justHitBlockCell[3] = { { 0x77, 0x77 }, { 0x77, 0x77 }, { 0x77, 0x77 } };
@@ -165,33 +165,33 @@ struct GameState
     bool justSpawnedPowerup = true;
 
     // Score data.
-    unsigned int score = 0x77;
-    unsigned int pendingScore = 0x77;
+    uint32_t score = 0x77;
+    uint32_t pendingScore = 0x77;
 
     // Enemy data.
     Enemy enemies[3];
-    unsigned int enemySpawnTimers[3] = { 0x77, 0x77, 0x77 };
-    unsigned int enemySpawnIndex = 0x77;
-    unsigned int enemyGateState = 0x77;
-    unsigned int enemyGateIndex = 0x77;
-    unsigned int enemyGateTimer = 0x77;
+    uint16_t enemySpawnTimers[3] = { 0x77, 0x77, 0x77 };
+    uint8_t enemySpawnIndex = 0x77;
+    uint8_t enemyGateState = 0x77;
+    uint8_t enemyGateIndex = 0x77;
+    uint16_t enemyGateTimer = 0x77;
 
     // Other stuff.
-    unsigned int overallSpeedStage = 0x77;
-    unsigned int overallSpeedStageM = 0x77;
-    unsigned int speedStageCounter = 0x77;
-    unsigned int speedReduction = 0x77;
-    unsigned int level = 0x77;
-    unsigned int mysteryInput = 0x77;
-    unsigned int bossHits = 0x77;
+    uint16_t overallSpeedStage = 0x77;
+    uint16_t overallSpeedStageM = 0x77;
+    uint8_t speedStageCounter = 0x77;
+    uint8_t speedReduction = 0x77;
+    uint8_t level = 0x77;
+    uint16_t mysteryInput = 0x77;
+    uint8_t bossHits = 0x77;
 
     // Despite triggering off a single ball at a time, its value is consumed during the same
     // ball update cycle, so it's here in the global state block rather than the block state.
     bool ceilCollis = true;
 
     // Simulation-specific data - not used by the actual game logic.
-    int _justMovedEnemy = -1;
-    unsigned int _enemyMysteryInput = 0x77;
-    unsigned int _enemyMoveOptions = 0;
-    int _queueEnemyDestruction = -1;
+    int8_t _justMovedEnemy = -1;
+    uint8_t _enemyMysteryInput = 0x77;
+    uint8_t _enemyMoveOptions = 0;
+    int8_t _queueEnemyDestruction = -1;
 };

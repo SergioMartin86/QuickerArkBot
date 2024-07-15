@@ -127,8 +127,8 @@ public:
         CheckPaddleCollisWithEnemy(state);
         UpdatePowerup(state);
         UpdateBallSprites(state);
-        CheckLaunchBall(state);
         CheckPaddleMove(state);
+        CheckLaunchBall(state);
         UpdateActiveBalls(state);
         CheckPowerupCanBeCollected(state);
         UpdateTimers(state);
@@ -540,6 +540,7 @@ public:
         {
             // TODO clear auto-launch
 
+            state.ball[0].pos.x = state.paddleX + 16;
             state.ball[0].cycle = 0;
             state.opState = OperationalState::BallLaunched;
         }
