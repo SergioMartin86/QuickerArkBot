@@ -420,8 +420,8 @@ public:
                 if (BlkPowerup(state.justHitBlock[i]))
                 {
                     const auto cell = state.justHitBlockCell[i];
-                    state.powerupPos = { cell.x * GameConsts::BlockWidth + GameConsts::FieldMinX,
-                                        cell.y * GameConsts::BlockHeight + GameConsts::FieldMinY };
+                    state.powerupPos = { (uint8_t)(cell.x * GameConsts::BlockWidth + GameConsts::FieldMinX),
+                                        (uint8_t)(cell.y * GameConsts::BlockHeight + GameConsts::FieldMinY) };
 
                     GenPowerup(state);
                 }
@@ -1721,7 +1721,7 @@ public:
                     }
                 }
 
-                state.justHitBlockCell[collisId] = { index % GameConsts::BlocksPerRow, index / GameConsts::BlocksPerRow };
+                state.justHitBlockCell[collisId] = { (uint8_t)(index % GameConsts::BlocksPerRow), (uint8_t)(index / GameConsts::BlocksPerRow) };
             }
 
             state.justDestrBlock[collisId] = (state.justHitBlock[collisId] != Block(0xf0));
