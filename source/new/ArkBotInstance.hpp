@@ -226,6 +226,9 @@ class EmuInstance : public EmuInstanceBase
       if (fire && gameMode < 7)  qInput |= 0b00001000; // S, for start menu
     }
 
+    // Getting current ball 1 posX
+    auto curBall1PosX = _nes.get_low_mem()[0x0038];
+
     // If using arkanoid controller, adjust position
     if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
     {
@@ -248,6 +251,12 @@ class EmuInstance : public EmuInstanceBase
     }
 
     if (_doRendering == false) _nes.emulate_skip_frame(qInput, 0);
+
+    // Getting new value of game mode
+    uint8_t newGameMode = _nes.get_low_mem()[0x000A];
+
+    // If previous mode was 8 and now 16, we need to fix the ball's position
+    if (gameMode == 8 && newGameMode == 16) _nes.get_low_mem()[0x0038] = curBall1PosX + 1;
   }
 
   GameState* getGameState() { return &_arkState; }

@@ -127,8 +127,8 @@ public:
         CheckPaddleCollisWithEnemy(state);
         UpdatePowerup(state);
         UpdateBallSprites(state);
-        CheckPaddleMove(state);
         CheckLaunchBall(state);
+        CheckPaddleMove(state);
         UpdateActiveBalls(state);
         CheckPowerupCanBeCollected(state);
         UpdateTimers(state);
