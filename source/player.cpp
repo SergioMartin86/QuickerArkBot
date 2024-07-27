@@ -64,11 +64,6 @@ int main(int argc, char *argv[])
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
 
-  // Parsing disabled blocks in lite state serialization
-  const auto stateDisabledBlocks = jaffarCommon::json::getArray<std::string>(configJs, "Disable State Blocks");
-  std::string stateDisabledBlocksOutput;
-  for (const auto& entry : stateDisabledBlocks) stateDisabledBlocksOutput += entry + std::string(" ");
-  
   // Getting reproduce flag
   bool isReproduce = program.get<bool>("--reproduce");
 
@@ -89,7 +84,6 @@ int main(int argc, char *argv[])
   // Printing provided parameters
   jaffarCommon::logger::log("[] Sequence File Path: '%s'\n", sequenceFilePath.c_str());
   jaffarCommon::logger::log("[] Sequence Length:    %lu\n", sequence.size());
-  jaffarCommon::logger::log("[] State File Path:    '%s'\n", initialStateFilePath.empty() ? "<Boot Start>" : initialStateFilePath.c_str());
   jaffarCommon::logger::log("[] Generating Sequence...\n");
 
   jaffarCommon::logger::refreshTerminal();
@@ -97,40 +91,14 @@ int main(int argc, char *argv[])
   // Creating emulator instance  
   auto e = ark::EmuInstance(initialLevel, initialScore, true);
 
-  // Setting controller types
-  e.setController1Type(controller1Type);
-  e.setController2Type(controller2Type);
-
   // Initializing emulator instance
-  e.initialize(romFilePath);
+  e.initialize();
 
   // If rendering enabled, then initailize it now
   if (disableRender == false) e.enableRendering();
   
   // Initializing video output
   if (disableRender == false) e.initializeVideoOutput();
-
-  // If an initial state is provided, load it now
-  if (initialStateFilePath != "")
-  {
-    std::string stateFileData;
-    if (jaffarCommon::file::loadStringFromFile(stateFileData, initialStateFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
-    jaffarCommon::deserializer::Contiguous d(stateFileData.data());
-    e.deserializeState(d);
-  }
-
-  // If an initial sequence is provided, load it now
-  if (initialSequenceFilePath != "")
-  {
-    std::string initialSequenceFileData;
-    if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial sequence file: %s\n", initialSequenceFilePath.c_str());
-    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, '#');
-    for (const auto& input : initialSequence) e.advanceState(input);
-    e.doSoftReset();
-  }
-
-  // Disabling requested blocks from state serialization
-  for (const auto& block : stateDisabledBlocks) e.disableStateBlock(block);
 
   // Creating playback instance
   auto p = PlaybackInstance(&e, sequence, cycleType);
