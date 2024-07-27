@@ -9,7 +9,8 @@
 
 struct stepData_t
 {
-  std::string input;
+  std::string inputString;
+  jaffar::input_t input;
   uint8_t *stateData;
   uint8_t *videoBuffer;
   jaffarCommon::hash::hash_t hash;
@@ -20,7 +21,7 @@ class PlaybackInstance
   public:
 
   // Initializes the playback module instance
-  PlaybackInstance(ark::EmuInstance *emu, const std::vector<std::string> &sequence, const std::string& cycleType) :
+  PlaybackInstance(ark::EmuInstance *emu, const std::vector<std::string> &sequence, const std::vector<jaffar::input_t> &decodedSequence, const std::string& cycleType) :
    _emu(emu)
   {
     // Getting full state size
@@ -34,7 +35,8 @@ class PlaybackInstance
     {
       // Adding new step
       stepData_t step;
-      step.input = sequence[i];
+      step.inputString = sequence[i];
+      step.input = decodedSequence[i];
 
       // Serializing state
       jaffarCommon::serializer::Contiguous s(stateData, _fullStateSize);
@@ -44,10 +46,6 @@ class PlaybackInstance
       // Saving step data
       step.stateData = (uint8_t *)malloc(_fullStateSize);
       memcpy(step.stateData, stateData, _fullStateSize);
-
-      // Saving video buffer
-      step.videoBuffer = (uint8_t *)malloc(_emu->getBlitSize());
-      memcpy(step.videoBuffer, _emu->getBlitPointer(), _emu->getBlitSize());
 
       // Adding the step into the sequence
       _stepSequence.push_back(step);
@@ -65,7 +63,8 @@ class PlaybackInstance
 
     // Adding last step with no input
     stepData_t step;
-    step.input = "<End Of Sequence>";
+    step.inputString = "<End Of Sequence>";
+    step.input = jaffar::input_t();
 
     // Serializing state
     jaffarCommon::serializer::Contiguous s(stateData, _fullStateSize);
@@ -75,10 +74,6 @@ class PlaybackInstance
     // Saving step data
     step.stateData = (uint8_t *)malloc(_fullStateSize);
     memcpy(step.stateData, stateData, _fullStateSize);
-
-    // Saving video buffer
-    step.videoBuffer = (uint8_t *)malloc(_emu->getBlitSize());
-    memcpy(step.videoBuffer, _emu->getBlitPointer(), _emu->getBlitSize());
 
     // Adding the step into the sequence
     _stepSequence.push_back(step);
@@ -92,15 +87,6 @@ class PlaybackInstance
   {
     // Checking the required step id does not exceed contents of the sequence
     if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
-
-    // Getting video buffer
-    auto videoBuffer = getStateVideoBuffer(stepId);
-
-    // Copying video buffer
-    memcpy(_emu->getBlitPointer(), videoBuffer, _emu->getBlitSize());
-
-    // Updating image
-    _emu->updateRenderer();
   }
 
   size_t getSequenceLength() const
@@ -108,7 +94,7 @@ class PlaybackInstance
     return _stepSequence.size();
   }
 
-  const std::string getInput(const size_t stepId) const
+  const std::string getInputString(const size_t stepId) const
   {
     // Checking the required step id does not exceed contents of the sequence
     if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
@@ -117,7 +103,7 @@ class PlaybackInstance
     const auto &step = _stepSequence[stepId];
 
     // Returning step input
-    return step.input;
+    return step.inputString;
   }
 
   const uint8_t *getStateData(const size_t stepId) const
@@ -165,7 +151,7 @@ class PlaybackInstance
     const auto &step = _stepSequence[stepId];
 
     // Returning step input
-    return step.input;
+    return step.inputString;
   }
 
   private:

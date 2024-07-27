@@ -30,22 +30,6 @@ class EmuInstance : public EmuInstanceBase
   {
   }
 
-  void initializeVideoOutput() override
-  {
-  }
-
-  void finalizeVideoOutput() override
-  {
-  }
-
-  void enableRendering() override
-  {
-  }
-
-  void disableRendering() override
-  {
-  }
-
   void serializeState(jaffarCommon::serializer::Base& serializer) const override
   {
    serializer.push(&_arkState, sizeof(_arkState));
@@ -61,10 +45,6 @@ class EmuInstance : public EmuInstanceBase
     jaffarCommon::serializer::Contiguous serializer;
     serializeState(serializer);
     return serializer.getOutputSize();
-  }
-
-  void updateRenderer() override
-  {
   }
 
   inline size_t getDifferentialStateSizeImpl() const override { return 0; }

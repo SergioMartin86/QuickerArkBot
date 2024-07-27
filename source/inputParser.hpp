@@ -25,40 +25,42 @@ public:
   {
   }
 
-  inline std::pair<bool, input_t> parseInputString(const std::string& inputString)
+  inline input_t parseInputString(const std::string& inputString) const
   {
-    // Parse valid flag
-    bool isValid = true;
-
     // Converting input into a stream for parsing
     std::istringstream ss(inputString);
 
     // Start separator
-    if (ss.get() != '|') isValid = false;
-    if (ss.get() != '.') isValid = false;
-    if (ss.get() != '.') isValid = false;
-    if (ss.get() != '|') isValid = false;
+    if (ss.get() != '|') reportBadInputString(inputString);
+    if (ss.get() != '.') reportBadInputString(inputString);
+    if (ss.get() != '.') reportBadInputString(inputString);
+    if (ss.get() != '|') reportBadInputString(inputString);
 
     // Storage for the input
     input_t input;
 
     // Parsing console inputs
-    isValid &= parseArkanoidInput(input, ss);
+    parseArkanoidInput(input, ss, inputString);
 
     // End separator
-    if (ss.get() != '|') isValid = false;
+    if (ss.get() != '|') reportBadInputString(inputString);
 
     // If its not the end of the stream, then extra values remain and its invalid
     ss.get();
-    if (ss.eof() == false) isValid = false;
+    if (ss.eof() == false) reportBadInputString(inputString);
 
     // Returning valid / input pair
-    return { isValid, input };
+    return input;
   }
 
   private:
 
-  static inline bool parseArkanoidInput(input_t& input, std::istringstream& ss)
+  static inline void reportBadInputString(const std::string& inputString)
+  {
+    JAFFAR_THROW_LOGIC("Could not decode input string: '%s'\n", inputString.c_str());
+  }
+
+  static inline bool parseArkanoidInput(input_t& input, std::istringstream& ss, const std::string& inputString)
   {
     char c = 0;
     ss.get(); // Empty
@@ -77,9 +79,8 @@ public:
 
     // Fire
     c = ss.get();
-    if (c != '.' && c != 'F') return false;
+    if (c != '.' && c != 'F') reportBadInputString(inputString);
     if (c == 'F') input.fire = true;
-
     return true;
   }
 

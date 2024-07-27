@@ -94,14 +94,15 @@ int main(int argc, char *argv[])
   // Initializing emulator instance
   e.initialize();
 
-  // If rendering enabled, then initailize it now
-  if (disableRender == false) e.enableRendering();
-  
-  // Initializing video output
-  if (disableRender == false) e.initializeVideoOutput();
+  // Getting input parser from the emulator
+  const auto inputParser = e.getInputParser();
+
+  // Getting decoded emulator input for each entry in the sequence
+  std::vector<jaffar::input_t> decodedSequence;
+  for (const auto& inputString : sequence) decodedSequence.push_back(inputParser->parseInputString(inputString));
 
   // Creating playback instance
-  auto p = PlaybackInstance(&e, sequence, cycleType);
+  auto p = PlaybackInstance(&e, sequence, decodedSequence, cycleType);
 
   // Getting state size
   auto stateSize = e.getStateSize();
@@ -196,12 +197,6 @@ int main(int argc, char *argv[])
     // Start playback from current point
     if (command == 'q') continueRunning = false;
   }
-
-  // Finalizing video output
-  if (disableRender == false) e.finalizeVideoOutput();
-
-  // If rendering enabled, then finalize it now
-  if (disableRender == false) e.enableRendering();
 
   // Ending ncurses window
   jaffarCommon::logger::finalizeTerminal();

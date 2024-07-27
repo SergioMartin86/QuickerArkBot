@@ -32,13 +32,9 @@ class EmuInstanceBase
 
   virtual ~EmuInstanceBase() = default;
 
-  inline void advanceState(const std::string &input)
+  inline void advanceState(const jaffar::input_t& input)
   {
-    auto result = _inputParser->parseInputString(input);
-
-    if (result.first == false) JAFFAR_THROW_LOGIC("Move provided cannot be parsed: '%s'\n", input.c_str());
-
-    advanceStateImpl(result.second);
+    advanceStateImpl(input);
   }
 
   void initialize()
@@ -48,10 +44,6 @@ class EmuInstanceBase
   }
 
   virtual void initializeImpl() = 0;
-  virtual void initializeVideoOutput() = 0;
-  virtual void finalizeVideoOutput() = 0;
-  virtual void enableRendering() = 0;
-  virtual void disableRendering() = 0;
 
   inline size_t getStateSize() const 
   {
@@ -63,14 +55,11 @@ class EmuInstanceBase
     return _differentialStateSize;
   }
 
-  uint8_t* getVideoBuffer() const { return _video_buffer; } 
-  uint8_t* getBlitPointer() const { return (uint8_t*)_curBlit; } 
-  size_t getBlitSize() const { return sizeof(int32_t) * BLIT_SIZE; } 
+  inline jaffar::InputParser* getInputParser() const { return _inputParser.get(); }
 
   // Virtual functions
 
   virtual jaffarCommon::hash::hash_t getStateHash() const = 0;
-  virtual void updateRenderer() = 0;
   virtual void serializeState(jaffarCommon::serializer::Base& s) const = 0;
   virtual void deserializeState(jaffarCommon::deserializer::Base& d) = 0;
 
@@ -93,10 +82,6 @@ class EmuInstanceBase
   
   // State size
   size_t _stateSize;
-
-  // Video buffer
-  uint8_t *_video_buffer;
-  int32_t _curBlit[BLIT_SIZE];
 
   // Initial level for Arkbot
   const uint8_t _initialLevel;
