@@ -55,21 +55,6 @@ int main(int argc, char *argv[])
   // Parsing script
   const auto configJs = nlohmann::json::parse(configJsRaw);
 
-  // Getting initial state file path
-  const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
-
-  // Getting Arkanoid rom file path
-  const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File Path");
-
-  // Getting initial state file path
-  const auto initialSequenceFilePath = jaffarCommon::json::getString(configJs, "Initial Sequence File");
-
-  // Getting Controller 1 type
-  std::string controller1Type = jaffarCommon::json::getString(configJs, "Controller 1 Type");
-
-  // Getting Controller 2 type
-  std::string controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
-
   // Getting initial level
   uint8_t initialLevel = jaffarCommon::json::getNumber<uint8_t>(configJs, "Initial Level");
 
@@ -217,24 +202,6 @@ int main(int argc, char *argv[])
     // Correct current step if requested more than possible
     if (currentStep < 0) currentStep = 0;
     if (currentStep >= sequenceLength) currentStep = sequenceLength - 1;
-
-    if (command == 'o')
-    {
-      // Obtaining RNG state
-      jaffarCommon::logger::log("Enter RAM file: ");
-
-      // Setting input as new rng
-      char str[80]; getstr(str);
-      jaffarCommon::logger::log("Loading RAM file '%s'...\n", str);
-      std::string ramData;
-      bool status = jaffarCommon::file::loadStringFromFile(ramData, str);
-      if (status == false) { jaffarCommon::logger::log("Could not read from file %s.\n", str); }
-      if (status == true)
-      {
-        memcpy(e.getRamPointer(), (uint8_t*) ramData.data(), 2048);
-        command = 's';
-      }
-    }
 
     // Quicksave creation command
     if (command == 's')

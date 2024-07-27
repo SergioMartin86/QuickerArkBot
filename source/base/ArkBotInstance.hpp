@@ -2,20 +2,14 @@
 
 #include <string>
 #include <vector>
-#include <SDL.h>
 #include <jaffarCommon/exceptions.hpp>
 #include <jaffarCommon/file.hpp>
 #include <jaffarCommon/serializers/base.hpp>
 #include <jaffarCommon/serializers/contiguous.hpp>
 #include <jaffarCommon/deserializers/base.hpp>
 #include "../ArkBotInstanceBase.hpp"
-#include <core/emu.hpp>
-#include <hqn.h>
-#include <hqn_gui_controller.h>
 #include "core/source/GameOperations.h"
 #include "core/source/GameData.h"
-
-typedef quickerNES::Emu emulator_t;
 
 namespace ark
 {
@@ -32,74 +26,33 @@ class EmuInstance : public EmuInstanceBase
   {
   }
 
-  virtual void initializeImpl(const std::string& romFilePath) override
+  virtual void initializeImpl() override
   {
-    // Only load quickerNES if verification is needed
-    if (_useVerification)
-    {
-      std::string romData;
-      jaffarCommon::file::loadStringFromFile(romData, romFilePath);
-
-      // Loading rom data
-      _nes.load_ines((uint8_t*)romData.data());
-
-      // Allocating video buffer
-      _video_buffer = (uint8_t *)malloc(getBlitSize());
-    }
-
-    // Initializing Arkbot
-    _arkEngine.Init(_arkState);
-
-    // Setting current level
-    _arkEngine.AdvanceToLevel(_arkState, _initialLevel);
-
-    // Setting initial score
-    _arkState.score = _initialScore;
   }
 
   void initializeVideoOutput() override
   {
-    _window = launchOutputWindow();
-
-    // Setting video buffer
-    _nes.set_pixels(_video_buffer, image_width + 8);
-
-    // Loading Emulator instance HQN
-    _hqnState.setEmulatorPointer(&_nes);
-    _hqnState.m_emu->set_pixels(_video_buffer, image_width + 8);
-
-    // Enabling emulation rendering
-    enableRendering();
-
-    // Creating HQN GUI
-    _hqnGUI = hqn::GUIController::create(_hqnState, _window);
-    _hqnGUI->setScale(1);
   }
 
   void finalizeVideoOutput() override
   {
-    free(_video_buffer);
   }
 
   void enableRendering() override
   {
-    _doRendering = true;
   }
 
   void disableRendering() override
   {
-    _doRendering = false; 
   }
 
   void serializeState(jaffarCommon::serializer::Base& serializer) const override
   {
-   if (_useVerification) _nes.serializeState(serializer);
    serializer.push(&_arkState, sizeof(_arkState));
   }
 
   void deserializeState(jaffarCommon::deserializer::Base& deserializer) override
   {
-   if (_useVerification)_nes.deserializeState(deserializer);
    deserializer.pop(&_arkState, sizeof(_arkState));
   }
 
@@ -112,13 +65,9 @@ class EmuInstance : public EmuInstanceBase
 
   void updateRenderer() override
   {
-    _hqnGUI->update_blit(_curBlit, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
   inline size_t getDifferentialStateSizeImpl() const override { return 0; }
-
-  void enableStateBlockImpl(const std::string& block) override { _nes.enableStateBlock(block); };
-  void disableStateBlockImpl(const std::string& block) override { _nes.disableStateBlock(block); };
 
   inline jaffarCommon::hash::hash_t getStateHash() const 
   {
@@ -189,32 +138,14 @@ class EmuInstance : public EmuInstanceBase
 
   std::string getCoreName() const override { return "ArkBot"; }
 
-  uint8_t* getRamPointer() const override { return nullptr; }
-
-  void advanceStateImpl(const ark::Controller& controller) override
+  void advanceStateImpl(const jaffar::input_t& input) override
   {
-    ark::Controller::port_t port1 = controller.getController1Code();
-
-    if (controller.getController1Type() == ark::Controller::controller_t::joypad)
-    {
-      // Advancing arkbot
-      Input input = 0;
-      if (port1 & 0b01000000) input |= LeftInput;
-      if (port1 & 0b10000000) input |= RightInput;
-      if (port1 & 0b00000001) input |= AInput;
-      _arkEngine.ExecuteInput(_arkState, input);
-    }
-
-    bool fire = false;
-    uint8_t adjustedPosition = 0;
-    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
-    {
       // Gathering arkanoid controller info
-      fire = controller.getController1Arkanoid().fire;
-      uint8_t position = controller.getController1Arkanoid().position;
+      auto fire = input.fire;
+      uint8_t position = input.position;
 
       // Adjusting arkanoid controller position
-      adjustedPosition = position + 2;
+      auto adjustedPosition = position + 2;
       if (adjustedPosition < 16) adjustedPosition = 16;
       if (adjustedPosition > 160) adjustedPosition = 160;
 
@@ -225,88 +156,21 @@ class EmuInstance : public EmuInstanceBase
       if (_arkState.opState == OperationalState::BallNotLaunched) _arkState.ball[0].pos.x = adjustedPosition + 16;
       
       // Advancing arkbot
-      Input input = 0;
-      if (fire) input |= AInput;
-      _arkEngine.ExecuteInput(_arkState, input);
-    }
-
-    if (_useVerification == false) return; 
-
-    // Getting quicknes input
-    uint32_t qInput = 0;
-    uint8_t gameMode = _nes.get_low_mem()[0x000A];
-    if (controller.getController1Type() == ark::Controller::controller_t::joypad) qInput = port1;
-    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
-    {
-      if (fire && gameMode >= 7) qInput |= 0b00000001; // A, for in game
-      if (fire && gameMode < 7)  qInput |= 0b00001000; // S, for start menu
-    }
-
-    // If using arkanoid controller, adjust position
-    if (controller.getController1Type() == ark::Controller::controller_t::arkanoid)
-    {
-      _nes.get_low_mem()[0x011A] = adjustedPosition;
-      _nes.get_low_mem()[0x011B] = adjustedPosition + 8;
-      _nes.get_low_mem()[0x011C] = adjustedPosition + 8;
-      _nes.get_low_mem()[0x011D] = adjustedPosition + 16;
-      _nes.get_low_mem()[0x011E] = adjustedPosition + 16;
-      _nes.get_low_mem()[0x011F] = adjustedPosition + 24;
-      
-      // If game mode is 8, we still have the ball, then we bring it with us
-      if (gameMode == 8) _nes.get_low_mem()[0x0038] = adjustedPosition + 16;
-    } 
-
-    // Advancing quickernes at the same time
-    if (_doRendering == true) 
-    {
-      _nes.emulate_frame(qInput, 0);
-      saveBlit(&_nes, _curBlit, hqn::HQNState::NES_VIDEO_PALETTE, 0, 0, 0, 0);
-    }
-
-    if (_doRendering == false) _nes.emulate_skip_frame(qInput, 0);
+      Input arkInput = 0;
+      if (fire) arkInput |= AInput;
+      _arkEngine.ExecuteInput(_arkState, arkInput);
   }
 
   void printInformation() const override
   {
-     jaffarCommon::logger::log("[] Arkbot   Paddle X: %u\n", _arkState.paddleX);
-     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Paddle X: %u\n", _nes.get_low_mem()[0x011A]);
+     jaffarCommon::logger::log("[] Paddle X: %u\n", _arkState.paddleX);
+     jaffarCommon::logger::log("[] Ball 1 Pos: (%u, %u)\n", _arkState.ball[0].pos.x, _arkState.ball[0].pos.y);
+     jaffarCommon::logger::log("[] Ball 2 Pos: (%u, %u)\n", _arkState.ball[1].pos.x, _arkState.ball[1].pos.y);
+     jaffarCommon::logger::log("[] Ball 3 Pos: (%u, %u)\n", _arkState.ball[2].pos.x, _arkState.ball[2].pos.y);
+     jaffarCommon::logger::log("[] Score:   %u\n", _arkState.score);
+     jaffarCommon::logger::log("[] Pending Score:   %u\n", _arkState.pendingScore);
+     jaffarCommon::logger::log("[] Block State:\n");
 
-     jaffarCommon::logger::log("[] Arkbot   Ball 1 Pos: (%u, %u)\n", _arkState.ball[0].pos.x, _arkState.ball[0].pos.y);
-     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Ball 1 Pos: (%u, %u)\n", _nes.get_low_mem()[0x0038], _nes.get_low_mem()[0x0037]);
-
-     jaffarCommon::logger::log("[] Arkbot   Ball 2 Pos: (%u, %u)\n", _arkState.ball[1].pos.x, _arkState.ball[1].pos.y);
-     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Ball 2 Pos: (%u, %u)\n", _nes.get_low_mem()[0x0052], _nes.get_low_mem()[0x0051]);
-
-     jaffarCommon::logger::log("[] Arkbot   Ball 3 Pos: (%u, %u)\n", _arkState.ball[2].pos.x, _arkState.ball[2].pos.y);
-     if (_useVerification == true) jaffarCommon::logger::log("[] QuickNES Ball 3 Pos: (%u, %u)\n", _nes.get_low_mem()[0x006C], _nes.get_low_mem()[0x006B]);
-
-     jaffarCommon::logger::log("[] Arkbot Score:   %u\n", _arkState.score);
-      
-     if (_useVerification == true)
-     {
-       unsigned int quickerNESScore = _nes.get_low_mem()[0x00370] * 100000 + 
-                                      _nes.get_low_mem()[0x00371] * 10000 +   
-                                      _nes.get_low_mem()[0x00372] * 1000 +
-                                      _nes.get_low_mem()[0x00373] * 100 +
-                                      _nes.get_low_mem()[0x00374] * 10;
-
-       jaffarCommon::logger::log("[] QuickNES Score: %u\n", quickerNESScore);
-     }
-
-     jaffarCommon::logger::log("[] Arkbot Pending Score:   %u\n", _arkState.pendingScore);
-
-     if (_useVerification == true)
-     {
-       unsigned int quickerNESPendingScore = _nes.get_low_mem()[0x0037C] * 100000 + 
-                                             _nes.get_low_mem()[0x0037D] * 10000 +   
-                                             _nes.get_low_mem()[0x0037E] * 1000 +
-                                             _nes.get_low_mem()[0x0037F] * 100 +
-                                             _nes.get_low_mem()[0x00380] * 10;
-
-       jaffarCommon::logger::log("[] QuickNES Pending Score: %u\n", quickerNESPendingScore);
-     }
-
-     jaffarCommon::logger::log("[] Arkbot Block State:\n");
      for (uint8_t i = 0; i < GameConsts::BlocksPerCol-3; i++)
      {
       jaffarCommon::logger::log("[] ");
@@ -317,53 +181,15 @@ class EmuInstance : public EmuInstanceBase
          jaffarCommon::logger::log("0x%02X ", _arkState.blocks[i*GameConsts::BlocksPerRow + j]);
       jaffarCommon::logger::log("\n");
      }
-
-     if (_useVerification == true)
-     {
-       jaffarCommon::logger::log("[] QuickNES Game Mode: %u\n", _nes.get_low_mem()[0x000A]);
-     }
   }
 
   private:
-
-  SDL_Window *launchOutputWindow()
-{
-  // Opening rendering window
-  SDL_SetMainReady();
-
-  // We can only call SDL_InitSubSystem once
-  if (!SDL_WasInit(SDL_INIT_VIDEO))
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) JAFFAR_THROW_LOGIC("Failed to initialize video: %s", SDL_GetError());
-
-  auto window = SDL_CreateWindow("JaffarPlus", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 100, 100, SDL_WINDOW_RESIZABLE);
-  if (window == nullptr) JAFFAR_THROW_LOGIC("Coult not open SDL window");
-
-  return window;
-}
 
   // Game state from Arkbot
   GameState _arkState;
 
   // Game operations class from Arkbot
   GameOp _arkEngine;
-
-  // Flag to determine whether to enable/disable rendering
-  bool _doRendering = true;
-
-  // Base Emulator instance
-  emulator_t _nes;
-
-  // Storage for the HQN state
-  hqn::HQNState _hqnState;
-
-  // Storage for the HQN GUI controller
-  hqn::GUIController *_hqnGUI;
-
-  // Flag to store whether to use the button overlay
-  bool _useOverlay = false;
-
-  // SDL Window
-  SDL_Window* _window;
 };
 
 } // namespace ark

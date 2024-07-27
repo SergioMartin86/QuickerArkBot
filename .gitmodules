@@ -4,6 +4,3 @@
 [submodule "source/base/core"]
 	path = source/base/core
 	url = https://github.com/SergioMartin86/ArkBotEngine.git
-[submodule "extern/quickerNES"]
-	path = extern/quickerNES
-	url = https://github.com/SergioMartin86/quickerNES.git

@@ -1,10 +1,4 @@
 {
-  "Initial State File": "",
-  "Initial Sequence File": "",
-  "Disable State Blocks": [ ],
-  "Rom File Path": "",
-  "Controller 1 Type": "Arkanoid",
-  "Controller 2 Type": "None",
   "Initial Level": 1,
   "Initial Score": 0,
   "Expected Score": 7350,

@@ -69,21 +69,6 @@ int main(int argc, char *argv[])
   // Parsing script
   const auto configJs = nlohmann::json::parse(configJsRaw);
 
-  // Getting initial state file path
-  const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
-
-  // Getting Arkanoid rom file path
-  const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File Path");
-
-  // Getting initial state file path
-  const auto initialSequenceFilePath = jaffarCommon::json::getString(configJs, "Initial Sequence File");
-
-  // Getting Controller 1 type
-  std::string controller1Type = jaffarCommon::json::getString(configJs, "Controller 1 Type");
-
-  // Getting Controller 2 type
-  std::string controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
-
   // Getting inital level
   uint8_t initialLevel = jaffarCommon::json::getNumber<uint8_t>(configJs, "Initial Level");
 
@@ -96,11 +81,6 @@ int main(int argc, char *argv[])
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
 
-  // Parsing disabled blocks in lite state serialization
-  const auto stateDisabledBlocks = jaffarCommon::json::getArray<std::string>(configJs, "Disable State Blocks");
-  std::string stateDisabledBlocksOutput;
-  for (const auto& entry : stateDisabledBlocks) stateDisabledBlocksOutput += entry + std::string(" ");
-  
   // Getting differential compression configuration
   if (configJs.contains("Differential Compression") == false) JAFFAR_THROW_LOGIC("Script file missing 'Differential Compression' entry\n");
   if (configJs["Differential Compression"].is_object() == false) JAFFAR_THROW_LOGIC("Script file 'Differential Compression' entry is not a key/value object\n");
@@ -121,38 +101,12 @@ int main(int argc, char *argv[])
   // Creating emulator instance
   auto e = ark::EmuInstance(initialLevel, initialScore, false);
 
- // Setting controller types
-  e.setController1Type(controller1Type);
-  e.setController2Type(controller2Type);
-  
   // Initializing emulator instance
-  e.initialize(romFilePath);
+  e.initialize();
 
   // Disable rendering
   e.disableRendering();
   
-  // If an initial state is provided, load it now
-  if (initialStateFilePath != "")
-  {
-    std::string stateFileData;
-    if (jaffarCommon::file::loadStringFromFile(stateFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial sequence file: %s\n", initialSequenceFilePath.c_str());
-    jaffarCommon::deserializer::Contiguous d(stateFileData.data());
-    e.deserializeState(d);
-  }
-
-  // If an initial sequence is provided, load it now
-  if (initialSequenceFilePath != "")
-  {
-    std::string initialSequenceFileData;
-    if (jaffarCommon::file::loadStringFromFile(initialSequenceFileData, initialSequenceFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
-    const auto initialSequence = jaffarCommon::string::split(initialSequenceFileData, '#');
-    for (const auto& input : initialSequence) e.advanceState(input);
-    e.doSoftReset();
-  }
-  
-  // Disabling requested blocks from state serialization
-  for (const auto& block : stateDisabledBlocks) e.disableStateBlock(block);
-
   // Getting full state size
   const auto stateSize = e.getStateSize();
 
@@ -180,7 +134,7 @@ int main(int argc, char *argv[])
   printf("[] Emulation Core:                         '%s'\n", emulationCoreName.c_str());
   printf("[] Sequence File:                          '%s'\n", sequenceFilePath.c_str());
   printf("[] Sequence Length:                        %lu\n", sequenceLength);
-  printf("[] State Size:                             %lu bytes - Disabled Blocks:  [ %s ]\n", stateSize, stateDisabledBlocksOutput.c_str());
+  printf("[] State Size:                             %lu bytes\n", stateSize);
   printf("[] Use Differential Compression:           %s\n", differentialCompressionEnabled ? "true" : "false");
   if (differentialCompressionEnabled == true) 
   { 

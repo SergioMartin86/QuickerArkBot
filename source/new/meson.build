@@ -6,6 +6,7 @@ quickerArkBotSrc =  [
 
 quickerArkBotIncludeDirs = [
  '.',
+ '..',
  'core/source/',
 ]
 
@@ -19,8 +20,5 @@ quickerArkBotCompileArgs = [
   include_directories : include_directories(quickerArkBotIncludeDirs),
   sources             : [ quickerArkBotSrc ],
   dependencies        : [  
-                          quickerNESDependency,
-                          hqnDependency,
-                          dependency('sdl2',  required : true),
                         ]
  )
