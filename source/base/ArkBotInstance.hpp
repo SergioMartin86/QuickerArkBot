@@ -18,7 +18,7 @@ class EmuInstance : public EmuInstanceBase
 {
  public:
 
-  EmuInstance(const uint8_t level, const unsigned int initialScore, const bool useVerification) : EmuInstanceBase(level, initialScore, useVerification)
+  EmuInstance(const uint8_t level, const unsigned int initialScore) : EmuInstanceBase(level, initialScore)
   {
   }
 

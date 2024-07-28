@@ -23,7 +23,7 @@ class EmuInstanceBase
 {
   public:
 
-  EmuInstanceBase(const uint8_t initialLevel, const unsigned int initialScore, const bool useVerification) :
+  EmuInstanceBase(const uint8_t initialLevel, const unsigned int initialScore) :
     _initialLevel (initialLevel),
     _initialScore(initialScore)
      {
