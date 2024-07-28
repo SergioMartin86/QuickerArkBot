@@ -16,2252 +16,2074 @@
 #include <initializer_list>
 
 static thread_local Block falseBlock = 0;
-inline Block& getBlock(Block* blocks, uint8_t index)
+inline Block             &getBlock(Block *blocks, uint8_t index)
 {
-   if (index < 11) return falseBlock;
-   if (index >= 220 - 22) return falseBlock;
-   return blocks[index-11];
+  if (index < 11) return falseBlock;
+  if (index >= 220 - 22) return falseBlock;
+  return blocks[index - 11];
 }
 
 class GameOp
 {
-public:
-    static inline void Init(GameState& state)
-    {
-        // Stuff that gets initialized once.
-        state.score = 0;
-        state.bossHits = 0;
+  public:
 
-        // These values are in the 0xff region that doesn't get cleared during init.
-        for (int i = 0; i < 3; i++)
-        {
-            state.justHitBlock[i] = Block(0xff);
-            state.justHitBlockCell[i] = { 0xff, 0xff };
-            state.justDestrBlock[i] = true;
-        }
+  static inline void Init(GameState &state)
+  {
+    // Stuff that gets initialized once.
+    state.score    = 0;
+    state.bossHits = 0;
 
-        // TODO do this at the appropriate op state transition instead of during init.
-        //AdvanceToLevel(state, 1);
-    }
+    // These values are in the 0xff region that doesn't get cleared during init.
+    for (int i = 0; i < 3; i++)
+      {
+        state.justHitBlock[i]     = Block(0xff);
+        state.justHitBlockCell[i] = {0xff, 0xff};
+        state.justDestrBlock[i]   = true;
+      }
 
-    static inline void AdvanceToLevel(GameState& state, const unsigned int level)
-    {
-        // Stuff that gets initialized every time a level is loaded.
+    // TODO do this at the appropriate op state transition instead of during init.
+    //AdvanceToLevel(state, 1);
+  }
 
-        // TODO other init phases.
-        state.opState = OperationalState::BallNotLaunched;
+  static inline void AdvanceToLevel(GameState &state, const unsigned int level)
+  {
+    // Stuff that gets initialized every time a level is loaded.
 
-        state.level = level;
+    // TODO other init phases.
+    state.opState = OperationalState::BallNotLaunched;
 
-        state.potPosX = 0;
-        state.pressFire = false;
+    state.level = level;
 
-        state.paddleCollis = false;
-        state.blockCollisCount = 0;
-        state.blockCollisSide = { false, false, false, false };
-        state.calculatedCell = { 0, 0 };
-        state.spawnedPowerup = Powerup::None;
-        state.ownedPowerup = Powerup::None;
-        state.powerupPos = { 0, 0 };
-        state.justSpawnedPowerup = false;
-        state.pendingScore = 0;
-        state.speedReduction = 0;
-        state.ceilCollis = false;
+    state.potPosX   = 0;
+    state.pressFire = false;
 
-        for (auto&& ball : state.ball)
-        {
-            ball.pos = { 0, 240 };
-            ball.vel = { 0, 0 };
-            ball.vSign = { 1, 1 };
-            ball.angle = Angle::Steep;
-            ball.cycle = 0;
-            ball.exists = false;
-            ball.xCollis = false;
-            ball.yCollis = false;
-            ball.speedMult = 0;
-            ball.speedStage = 0;
-            ball.speedStageM = 0;
+    state.paddleCollis       = false;
+    state.blockCollisCount   = 0;
+    state.blockCollisSide    = {false, false, false, false};
+    state.calculatedCell     = {0, 0};
+    state.spawnedPowerup     = Powerup::None;
+    state.ownedPowerup       = Powerup::None;
+    state.powerupPos         = {0, 0};
+    state.justSpawnedPowerup = false;
+    state.pendingScore       = 0;
+    state.speedReduction     = 0;
+    state.ceilCollis         = false;
 
-            ball._paddleCollis = false;
-        }
+    for (auto &&ball : state.ball)
+      {
+        ball.pos         = {0, 240};
+        ball.vel         = {0, 0};
+        ball.vSign       = {1, 1};
+        ball.angle       = Angle::Steep;
+        ball.cycle       = 0;
+        ball.exists      = false;
+        ball.xCollis     = false;
+        ball.yCollis     = false;
+        ball.speedMult   = 0;
+        ball.speedStage  = 0;
+        ball.speedStageM = 0;
 
-        auto id = 0;
-        for (auto&& enemy : state.enemies)
-        {
-            enemy.pos = { 0, 0 };
-            enemy.active = false;
-            enemy.exiting = false;
-            enemy.destrFrame = 0;
-            enemy.moveTimer = 0;
-            enemy.moveDir = 0;
-            enemy.movementType = MovementType::Normal;
-            enemy.descentTimer = 0;
-            enemy.animTimer = 0;
-            enemy.circleStage = 0;
-            enemy.circleHalf = CircleHalf::Bottom;
-            enemy.circleDir = CircleDir::Clockwise;
+        ball._paddleCollis = false;
+      }
 
-            enemy._id = id++;
-        }
+    auto id = 0;
+    for (auto &&enemy : state.enemies)
+      {
+        enemy.pos          = {0, 0};
+        enemy.active       = false;
+        enemy.exiting      = false;
+        enemy.destrFrame   = 0;
+        enemy.moveTimer    = 0;
+        enemy.moveDir      = 0;
+        enemy.movementType = MovementType::Normal;
+        enemy.descentTimer = 0;
+        enemy.animTimer    = 0;
+        enemy.circleStage  = 0;
+        enemy.circleHalf   = CircleHalf::Bottom;
+        enemy.circleDir    = CircleDir::Clockwise;
 
-        state.enemyGateState = 0;
-        state.enemyGateIndex = 0;
-        state.enemyGateTimer = 0;
+        enemy._id = id++;
+      }
 
-        // Formal init routines.
-        LoadLevel(state, state.level);
-        InitPaddleAndBall(state, state.level);
-    }
+    state.enemyGateState = 0;
+    state.enemyGateIndex = 0;
+    state.enemyGateTimer = 0;
 
-    static inline void AdvanceFrame(GameState& state, const uint8_t potPosX, const bool fire)
-    {
-        state._justMovedEnemy = -1;
-        state._enemyMoveOptions = 0;
-        state._enemyMysteryInput = 0x77;
+    // Formal init routines.
+    LoadLevel(state, state.level);
+    InitPaddleAndBall(state, state.level);
+  }
 
-        RefreshMiscState(state);
-        ProcessInput(state, potPosX, fire);
-        UpdateScore(state);
-        CheckPowerupCanSpawn(state);
-        UpdateEnemies(state);
-        CheckPaddleCollisWithEnemy(state);
-        UpdatePowerup(state);
-        UpdateBallSprites(state);
-        CheckLaunchBall(state);
-        CheckPaddleMove(state);
-        UpdateActiveBalls(state);
-        CheckPowerupCanBeCollected(state);
-        UpdateTimers(state);
-    }
+  static inline void AdvanceFrame(GameState &state, const uint8_t potPosX, const bool fire)
+  {
+    state._justMovedEnemy    = -1;
+    state._enemyMoveOptions  = 0;
+    state._enemyMysteryInput = 0x77;
 
-    static inline void LoadLevel(GameState& state, unsigned int level)
-    {
-        int i = 0;
-        for (auto&& timer : state.enemySpawnTimers)
-        {
-            timer = Data::EnemySpawnTimerTable[state.level][i];
+    RefreshMiscState(state);
+    ProcessInput(state, potPosX, fire);
+    UpdateScore(state);
+    CheckPowerupCanSpawn(state);
+    UpdateEnemies(state);
+    CheckPaddleCollisWithEnemy(state);
+    UpdatePowerup(state);
+    UpdateBallSprites(state);
+    CheckLaunchBall(state);
+    CheckPaddleMove(state);
+    UpdateActiveBalls(state);
+    CheckPowerupCanBeCollected(state);
+    UpdateTimers(state);
+  }
 
-            // TODO remove fixup once simulating between-level state
-            if (timer >= 8) timer -= 8;
+  static inline void LoadLevel(GameState &state, unsigned int level)
+  {
+    int i = 0;
+    for (auto &&timer : state.enemySpawnTimers)
+      {
+        timer = Data::EnemySpawnTimerTable[state.level][i];
 
-            i++;
-        }
+        // TODO remove fixup once simulating between-level state
+        if (timer >= 8) timer -= 8;
 
-        if (level == 36)
-        {
-            state.currentBlocks = 0;
-            state.totalBlocks = 0;
-        }
-        else
-        {
-            state.currentBlocks = Data::LevelBlockCount[level];
-            state.totalBlocks = state.currentBlocks;
+        i++;
+      }
 
-            for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
-            for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++)
-            {
-                state.blocks[i] = Data::LevelData[level][i+11];
-            }
-        }
-    }
+    if (level == 36)
+      {
+        state.currentBlocks = 0;
+        state.totalBlocks   = 0;
+    } else
+      {
+        state.currentBlocks = Data::LevelBlockCount[level];
+        state.totalBlocks   = state.currentBlocks;
 
-    static inline void InitPaddleAndBall(GameState& state, unsigned int level)
-    {
-        state.ball[0].exists = true;
-        // TODO set paddle transformation
-        state.ball[0].pos.y = 0xcc;
-        // TODO other values?
+        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
+        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) { state.blocks[i] = Data::LevelData[level][i + 11]; }
+      }
+  }
 
-        // These values aren't explicitly set in the game code, instead
-        // they're set implicitly from the struct-clear routine.
-        state.ball[0].angle = Angle::Steep;
-        state.ball[0].vSign.vx = 1;
-        state.ball[0].vSign.vy = -1;
+  static inline void InitPaddleAndBall(GameState &state, unsigned int level)
+  {
+    state.ball[0].exists = true;
+    // TODO set paddle transformation
+    state.ball[0].pos.y = 0xcc;
+    // TODO other values?
 
-        state.overallSpeedStage = Data::StartingSpeedStage[level];
-        state.overallSpeedStageM = Data::StartingSpeedStage[level];
-        state.speedStageCounter = Data::SpeedStageThresholds[state.overallSpeedStage];
-        state.ball[0].speedStage = state.overallSpeedStage;
-        state.ball[0].speedStageM = state.overallSpeedStage;
+    // These values aren't explicitly set in the game code, instead
+    // they're set implicitly from the struct-clear routine.
+    state.ball[0].angle    = Angle::Steep;
+    state.ball[0].vSign.vx = 1;
+    state.ball[0].vSign.vy = -1;
 
-        state.paddleX = GameConsts::PaddleStart;
-        const auto paddleLeftEdge = state.paddleX;
-        const auto paddleLeftCenter = paddleLeftEdge + 8;
-        const auto paddleRightCenter = paddleLeftCenter + 8;
+    state.overallSpeedStage   = Data::StartingSpeedStage[level];
+    state.overallSpeedStageM  = Data::StartingSpeedStage[level];
+    state.speedStageCounter   = Data::SpeedStageThresholds[state.overallSpeedStage];
+    state.ball[0].speedStage  = state.overallSpeedStage;
+    state.ball[0].speedStageM = state.overallSpeedStage;
 
-        state.ball[0].pos.x = paddleRightCenter;
-    }
+    state.paddleX                = GameConsts::PaddleStart;
+    const auto paddleLeftEdge    = state.paddleX;
+    const auto paddleLeftCenter  = paddleLeftEdge + 8;
+    const auto paddleRightCenter = paddleLeftCenter + 8;
 
-    static inline unsigned int _RandNum(GameState& state, const unsigned int inputCarry)
-    {
-        const auto scoreDigit4 = (state.score % 1000) / 100;
-        const auto scoreDigit5 = (state.score % 100) / 10;
+    state.ball[0].pos.x = paddleRightCenter;
+  }
 
-        // Mystery input values, always seem to be constant.
-        const auto mystery0379 = 0;
-        const auto mystery037a = 0;
+  static inline unsigned int _RandNum(GameState &state, const unsigned int inputCarry)
+  {
+    const auto scoreDigit4 = (state.score % 1000) / 100;
+    const auto scoreDigit5 = (state.score % 100) / 10;
 
-        // Other values.
-        const auto paddleLeftEdge = state.paddleX;
-        const auto paddleLeftCenter = paddleLeftEdge + 8;
+    // Mystery input values, always seem to be constant.
+    const auto mystery0379 = 0;
+    const auto mystery037a = 0;
 
-        auto rng = state.mysteryInput;
-        auto carry = inputCarry;
+    // Other values.
+    const auto paddleLeftEdge   = state.paddleX;
+    const auto paddleLeftCenter = paddleLeftEdge + 8;
 
-        const auto adc = [&rng, &carry](unsigned int val) {
-            rng += val + carry;
-            carry = (rng > 0xff);
-            rng &= 0xff;
-        };
+    auto rng   = state.mysteryInput;
+    auto carry = inputCarry;
 
-        const auto rol = [&rng, &carry] {
-            const auto topBit = (rng & 0x80) >> 7;
+    const auto adc = [&rng, &carry](unsigned int val) {
+      rng += val + carry;
+      carry = (rng > 0xff);
+      rng &= 0xff;
+    };
 
-            rng = (rng << 1) & 0xff;
-            rng |= carry;
-            carry = topBit;
-        };
+    const auto rol = [&rng, &carry] {
+      const auto topBit = (rng & 0x80) >> 7;
 
-        const auto ror = [&rng, &carry] {
-            const auto bottomBit = (rng & 1);
+      rng = (rng << 1) & 0xff;
+      rng |= carry;
+      carry = topBit;
+    };
 
-            rng = rng >> 1;
-            rng |= (carry << 7);
-            carry = bottomBit;
-        };
+    const auto ror = [&rng, &carry] {
+      const auto bottomBit = (rng & 1);
 
-        rng = Data::RngTable[rng % 16];
+      rng = rng >> 1;
+      rng |= (carry << 7);
+      carry = bottomBit;
+    };
 
-        adc(state.mysteryInput);
-        adc(scoreDigit4);
-        adc(scoreDigit5);
-        rol();
-        rol();
-        adc(mystery0379);
-        adc(mystery037a);
-        adc(paddleLeftEdge);
-        adc(paddleLeftCenter);
-        rol();
-        rol();
-        rol();
-        adc(state.ball[0].pos.y);
-        adc(state.ball[0].pos.x);
-        ror();
-        ror();
+    rng = Data::RngTable[rng % 16];
 
-        state.mysteryInput += 3;
+    adc(state.mysteryInput);
+    adc(scoreDigit4);
+    adc(scoreDigit5);
+    rol();
+    rol();
+    adc(mystery0379);
+    adc(mystery037a);
+    adc(paddleLeftEdge);
+    adc(paddleLeftCenter);
+    rol();
+    rol();
+    rol();
+    adc(state.ball[0].pos.y);
+    adc(state.ball[0].pos.x);
+    ror();
+    ror();
 
-        return rng;
-    }
+    state.mysteryInput += 3;
 
-    static inline void RefreshMiscState(GameState& state)
-    {
-        if (state.opState == OperationalState::BallNotLaunched
-            || state.opState == OperationalState::BallLaunched)
-        {
-            ReactToBlockCollis(state);
+    return rng;
+  }
 
-            if (!state.justSpawnedPowerup)
-            {
-                UpdateEnemyGate(state);
-            }
+  static inline void RefreshMiscState(GameState &state)
+  {
+    if (state.opState == OperationalState::BallNotLaunched || state.opState == OperationalState::BallLaunched)
+      {
+        ReactToBlockCollis(state);
 
-            // TODO other updates
-
-            state.justSpawnedPowerup = false;
-        }
+        if (!state.justSpawnedPowerup) { UpdateEnemyGate(state); }
 
         // TODO other updates
+
+        state.justSpawnedPowerup = false;
     }
 
-    static inline void ReactToBlockCollis(GameState& state)
-    {
-        for(auto i = 0u; i < state.blockCollisCount; i++)
-        {
-            if (state.justDestrBlock[i])
-            {
-                state.currentBlocks--;
+    // TODO other updates
+  }
+
+  static inline void ReactToBlockCollis(GameState &state)
+  {
+    for (auto i = 0u; i < state.blockCollisCount; i++)
+      {
+        if (state.justDestrBlock[i]) { state.currentBlocks--; }
+      }
+  }
+
+  static inline void UpdateEnemyGate(GameState &state)
+  {
+    if (state.opState == OperationalState::BallNotLaunched || state.opState == OperationalState::BallLaunched)
+      {
+        if (state.enemyGateTimer > 0)
+          {
+            state.enemyGateTimer--;
+        } else
+          {
+            if (state.enemyGateState != 0)
+              {
+                if (Data::GateStateSignalValues[state.enemyGateState] == 0)
+                  {
+                    return;
+                } else if (Data::GateStateSignalValues[state.enemyGateState] == 0xff)
+                  {
+                    state.enemyGateState = 0;
+                    return;
+                } else
+                  {
+                    state.enemyGateTimer = Data::GateTimerDurations[state.enemyGateState];
+                    state.enemyGateState++;
+                  }
             }
-        }
+          }
     }
+  }
 
-    static inline void UpdateEnemyGate(GameState& state)
-    {
-        if (state.opState == OperationalState::BallNotLaunched
-            || state.opState == OperationalState::BallLaunched)
-        {
-            if (state.enemyGateTimer > 0)
-            {
-                state.enemyGateTimer--;
-            }
-            else
-            {
-                if (state.enemyGateState != 0)
-                {
-                    if (Data::GateStateSignalValues[state.enemyGateState] == 0)
-                    {
-                        return;
-                    }
-                    else if (Data::GateStateSignalValues[state.enemyGateState] == 0xff)
-                    {
-                        state.enemyGateState = 0;
-                        return;
-                    }
-                    else
-                    {
-                        state.enemyGateTimer = Data::GateTimerDurations[state.enemyGateState];
-                        state.enemyGateState++;
-                    }
-                }
-            }
-        }
+  static inline void ProcessInput(GameState &state, const uint8_t potPosX, const bool fire)
+  {
+    // Adjusting arkanoid controller position
+    uint8_t adjustedPosition = potPosX + 2;
+    if (adjustedPosition < 16) adjustedPosition = 16;
+    if (adjustedPosition > 160) adjustedPosition = 160;
+
+    state.potPosX   = adjustedPosition;
+    state.pressFire = fire;
+  }
+
+  static inline void UpdateScore(GameState &state)
+  {
+    UpdatePendingBlockScore(state);
+
+    if (state.pendingScore % 100 > 0)
+      {
+        state.pendingScore -= 10;
+        state.score += 10;
+    } else if (state.pendingScore > 0)
+      {
+        state.pendingScore -= 100;
+        state.score += 100;
     }
+  }
 
-    static inline void ProcessInput(GameState& state, const uint8_t potPosX, const bool fire)
-    {
-              // Adjusting arkanoid controller position
-      uint8_t adjustedPosition = potPosX + 2;
-      if (adjustedPosition < 16) adjustedPosition = 16;
-      if (adjustedPosition > 160) adjustedPosition = 160;
+  static inline void UpdatePendingBlockScore(GameState &state)
+  {
+    for (auto i = 0u; i < state.blockCollisCount; i++)
+      {
+        // TODO multiple block collisions
+        const auto blockType = BlkType(state.justHitBlock[i]);
 
-        state.potPosX = adjustedPosition;
-        state.pressFire = fire;
-    }
-
-    static inline void UpdateScore(GameState& state)
-    {
-        UpdatePendingBlockScore(state);
-
-        if (state.pendingScore % 100 > 0)
-        {
-            state.pendingScore -= 10;
-            state.score += 10;
+        if (blockType == BlockType::Silver)
+          {
+            state.pendingScore += 50 * state.level;
+        } else if (blockType != BlockType::Gold)
+          {
+            const auto scoreIndex = (static_cast<int>(blockType) >> 4) - 1;
+            state.pendingScore += Data::BlockScoreTable[scoreIndex];
         }
-        else if (state.pendingScore > 0)
-        {
-            state.pendingScore -= 100;
-            state.score += 100;
-        }
-    }
+      }
+  }
 
-    static inline void UpdatePendingBlockScore(GameState& state)
-    {
+  static inline void UpdateEnemies(GameState &state)
+  {
+    if (state.level != GameConsts::BossLevel && (state.opState == OperationalState::BallNotLaunched || state.opState == OperationalState::BallLaunched))
+      {
+        UpdateEnemyAnimTimers(state);
+        AdvanceEnemies(state);
+        UpdateEnemyStatus(state);
+        HandleEnemyDestruction(state);
+        UpdateEnemySprites(state);
+    }
+  }
+
+  static inline void DestroyEnemy(GameState &state, Enemy &enemy)
+  {
+    state.pendingScore += 100;
+    enemy.active     = false;
+    enemy.destrFrame = 1;
+  }
+
+  static inline void CheckPaddleCollisWithEnemy(GameState &state)
+  {
+    if (!state.ball[0].exists && !state.ball[1].exists && !state.ball[2].exists) return;
+
+    for (auto &&enemy : state.enemies)
+      {
+        if (enemy.active && !enemy.exiting && enemy.pos.y < 0xe0 && GameConsts::PaddleTop + 4 >= enemy.pos.y && enemy.pos.y + 0xe >= GameConsts::PaddleTop &&
+            enemy.pos.x + 0xc >= state.paddleX && state.paddleX + 24 + 5 >= enemy.pos.x)
+          {
+            DestroyEnemy(state, enemy);
+        }
+      }
+
+    if (state._queueEnemyDestruction != -1)
+      {
+        DestroyEnemy(state, state.enemies[state._queueEnemyDestruction]);
+        state._queueEnemyDestruction = -1;
+    }
+  }
+
+  static inline void CheckPowerupCanSpawn(GameState &state)
+  {
+    const auto exactlyOneBallActive = (state.ball[0].exists && !state.ball[1].exists && !state.ball[2].exists);
+
+    const auto preconditions = _Pedantic ? (exactlyOneBallActive && state.currentBlocks > 0 && state.spawnedPowerup == Powerup::None)
+                                         : (state.ownedPowerup == Powerup::None && state.spawnedPowerup == Powerup::None);
+
+    if (preconditions)
+      {
         for (auto i = 0u; i < state.blockCollisCount; i++)
-        {
-            // TODO multiple block collisions
-            const auto blockType = BlkType(state.justHitBlock[i]);
+          {
+            if (BlkPowerup(state.justHitBlock[i]))
+              {
+                const auto cell  = state.justHitBlockCell[i];
+                state.powerupPos = {(uint8_t)(cell.x * GameConsts::BlockWidth + GameConsts::FieldMinX), (uint8_t)(cell.y * GameConsts::BlockHeight + GameConsts::FieldMinY)};
 
-            if (blockType == BlockType::Silver)
-            {
-                state.pendingScore += 50 * state.level;
+                GenPowerup(state);
             }
-            else if (blockType != BlockType::Gold)
-            {
-                const auto scoreIndex = (static_cast<int>(blockType) >> 4) - 1;
-                state.pendingScore += Data::BlockScoreTable[scoreIndex];
-            }
-        }
+          }
     }
+  }
 
-    static inline void UpdateEnemies(GameState& state)
-    {
-        if (state.level != GameConsts::BossLevel
-            && (state.opState == OperationalState::BallNotLaunched || state.opState == OperationalState::BallLaunched))
-        {
-            UpdateEnemyAnimTimers(state);
-            AdvanceEnemies(state);
-            UpdateEnemyStatus(state);
-            HandleEnemyDestruction(state);
-            UpdateEnemySprites(state);
-        }
-    }
+  static inline void GenPowerup(GameState &state)
+  {
+    auto inputCarry = 0;
 
-    static inline void DestroyEnemy(GameState& state, Enemy& enemy)
-    {
-        state.pendingScore += 100;
-        enemy.active = false;
-        enemy.destrFrame = 1;
-    }
+    auto newPowerup = Powerup::None;
+    while (newPowerup == Powerup::None)
+      {
+        // This always seems to be constant...
+        state.mysteryInput = 1;
+        const auto rn      = _RandNum(state, inputCarry);
 
-    static inline void CheckPaddleCollisWithEnemy(GameState& state)
-    {
-        if (!state.ball[0].exists && !state.ball[1].exists && !state.ball[2].exists) return;
+        auto spawnedRarePowerup = false;
+        for (int x = 0; x < 6; x++)
+          {
+            if (rn == Data::SpecialPowerupTable[x])
+              {
+                if (x < 3)
+                  {
+                    newPowerup = Powerup::ExtraLife;
+                } else
+                  {
+                    newPowerup = Powerup::Warp;
+                  }
 
-        for (auto&& enemy : state.enemies)
-        {
-            if (enemy.active && !enemy.exiting && enemy.pos.y < 0xe0
-                && GameConsts::PaddleTop + 4 >= enemy.pos.y
-                && enemy.pos.y + 0xe >= GameConsts::PaddleTop
-                && enemy.pos.x + 0xc >= state.paddleX
-                && state.paddleX + 24 + 5 >= enemy.pos.x)
-            {
-                DestroyEnemy(state, enemy);
+                spawnedRarePowerup = true;
             }
-        }
+          }
 
-        if (state._queueEnemyDestruction != -1)
-        {
-            DestroyEnemy(state, state.enemies[state._queueEnemyDestruction]);
-            state._queueEnemyDestruction = -1;
-        }
-    }
-
-    static inline void CheckPowerupCanSpawn(GameState& state)
-    {
-        const auto exactlyOneBallActive = (state.ball[0].exists && !state.ball[1].exists && !state.ball[2].exists);
-
-        const auto preconditions = _Pedantic ? (exactlyOneBallActive && state.currentBlocks > 0 && state.spawnedPowerup == Powerup::None)
-                                            : (state.ownedPowerup == Powerup::None && state.spawnedPowerup == Powerup::None);
-
-        if (preconditions)
-        {
-            for (auto i = 0u; i < state.blockCollisCount; i++)
-            {
-                if (BlkPowerup(state.justHitBlock[i]))
-                {
-                    const auto cell = state.justHitBlockCell[i];
-                    state.powerupPos = { (uint8_t)(cell.x * GameConsts::BlockWidth + GameConsts::FieldMinX),
-                                        (uint8_t)(cell.y * GameConsts::BlockHeight + GameConsts::FieldMinY) };
-
-                    GenPowerup(state);
-                }
-            }
-        }
-    }
-
-    static inline void GenPowerup(GameState& state)
-    {
-        auto inputCarry = 0;
-
-        auto newPowerup = Powerup::None;
-        while (newPowerup == Powerup::None)
-        {
-            // This always seems to be constant...
-            state.mysteryInput = 1;
-            const auto rn = _RandNum(state, inputCarry);
-
-            auto spawnedRarePowerup = false;
-            for (int x = 0; x < 6; x++)
-            {
-                if (rn == Data::SpecialPowerupTable[x])
-                {
-                    if (x < 3)
-                    {
-                        newPowerup = Powerup::ExtraLife;
-                    }
-                    else
-                    {
-                        newPowerup = Powerup::Warp;
-                    }
-
-                    spawnedRarePowerup = true;
-                }
-            }
-
-            if (!spawnedRarePowerup)
-            {
-                const auto rnLoBits = (rn & 7);
-                if (rnLoBits == 0)
-                {
-                    // rn == 7 would be an extra life, but since those have special handling,
-                    // a large-paddle powerup gets spawned instead.
-                    newPowerup = Powerup::LargePaddle;
-                }
-                else if (rnLoBits < 6)
-                {
-                    newPowerup = static_cast<Powerup>(rnLoBits);
-                }
-                else
-                {
-                    // rn == 6 would be a warp powerup, but since those have special handling,
-                    // a multiball powerup gets spawned instead.
-                    newPowerup = Powerup::Multiball;
-                }
-            }
-
-            if (newPowerup == state.ownedPowerup)
-            {
-                // We already have this powerup, reset and try again.
-                inputCarry = (newPowerup >= state.ownedPowerup);
-                newPowerup = Powerup::None;
-            }
+        if (!spawnedRarePowerup)
+          {
+            const auto rnLoBits = (rn & 7);
+            if (rnLoBits == 0)
+              {
+                // rn == 7 would be an extra life, but since those have special handling,
+                // a large-paddle powerup gets spawned instead.
+                newPowerup = Powerup::LargePaddle;
+            } else if (rnLoBits < 6)
+              {
+                newPowerup = static_cast<Powerup>(rnLoBits);
+            } else
+              {
+                // rn == 6 would be a warp powerup, but since those have special handling,
+                // a multiball powerup gets spawned instead.
+                newPowerup = Powerup::Multiball;
+              }
         }
 
-        state.spawnedPowerup = newPowerup;
-        state.justSpawnedPowerup = true;
-    }
-
-    static inline void UpdatePowerup(GameState& state)
-    {
-        if (_Pedantic)
-        {
-            if (state.opState != OperationalState::Paused)
-            {
-                if (state.spawnedPowerup == Powerup::None)
-                {
-                    state.powerupPos.y = 0xf0;
-                }
-
-                if (state.powerupPos.y >= 0xf0)
-                {
-                    state.spawnedPowerup = Powerup::None;
-                    state.powerupPos.y = 0xf0;
-                }
-
-                state.powerupPos.y++;
-            }
+        if (newPowerup == state.ownedPowerup)
+          {
+            // We already have this powerup, reset and try again.
+            inputCarry = (newPowerup >= state.ownedPowerup);
+            newPowerup = Powerup::None;
         }
-        else
-        {
+      }
+
+    state.spawnedPowerup     = newPowerup;
+    state.justSpawnedPowerup = true;
+  }
+
+  static inline void UpdatePowerup(GameState &state)
+  {
+    if (_Pedantic)
+      {
+        if (state.opState != OperationalState::Paused)
+          {
+            if (state.spawnedPowerup == Powerup::None) { state.powerupPos.y = 0xf0; }
+
+            if (state.powerupPos.y >= 0xf0)
+              {
+                state.spawnedPowerup = Powerup::None;
+                state.powerupPos.y   = 0xf0;
+            }
+
             state.powerupPos.y++;
         }
+    } else
+      {
+        state.powerupPos.y++;
+      }
+  }
+
+  static inline void UpdateBallSprites(GameState &state)
+  {
+    // Sprites aren't really a concern for this simulation, but this function does
+    // do a few other important updates.
+
+    if (_Pedantic)
+      {
+        for (auto &&ball : state.ball)
+          {
+            if (!ball.exists) { ball.pos.y = 0xf0; }
+          }
     }
+  }
 
-    static inline void UpdateBallSprites(GameState& state)
-    {
-        // Sprites aren't really a concern for this simulation, but this function does
-        // do a few other important updates.
+  static inline void CheckLaunchBall(GameState &state)
+  {
+    if (state.pressFire && state.opState == OperationalState::BallNotLaunched)
+      {
+        // TODO clear auto-launch
 
-        if (_Pedantic)
-        {
-            for (auto&& ball : state.ball)
-            {
-                if (!ball.exists)
-                {
-                    ball.pos.y = 0xf0;
-                }
-            }
-        }
+        state.ball[0].pos.x = state.paddleX + 16;
+        state.ball[0].cycle = 0;
+        state.opState       = OperationalState::BallLaunched;
     }
-
-    static inline void CheckLaunchBall(GameState& state)
-    {
-        if (state.pressFire && state.opState == OperationalState::BallNotLaunched)
-        {
-            // TODO clear auto-launch
-
-            state.ball[0].pos.x = state.paddleX + 16;
-            state.ball[0].cycle = 0;
-            state.opState = OperationalState::BallLaunched;
-        }
-    }
-
-    static inline void CheckPaddleMove(GameState& state)
-    {
-        const auto ballsExist = (state.ball[0].exists || state.ball[1].exists || state.ball[2].exists);
-        
-        // TODO other checks?
-        if (!_Pedantic || (ballsExist && state.opState != OperationalState::Paused && state.currentBlocks > 0))
-        {
-            DoPaddleMove(state, state.potPosX);
-        }
-    }
-
-    static inline void DoPaddleMove(GameState& state, int potPosX)
-    {
-      // Now setting paddle position
-      state.paddleX = potPosX;
-
-      // If  we still have the ball, we bring it with us
-      if (state.opState == OperationalState::BallNotLaunched) state.ball[0].pos.x = potPosX + 16;
-    }
-
-    static inline void UpdateActiveBalls(GameState& state)
-    {
-        state.blockCollisCount = 0;
-
-        if (state.opState != OperationalState::BallLaunched) return;
-        if (state.currentBlocks == 0 && state.level != GameConsts::BossLevel) return;
-
-        if (_Pedantic)
-        {
-            if (state.speedReduction > 0)
-            {
-                state.speedReduction--;
-                return;
-            }
-        }
-
-        for (auto&& ball : state.ball)
-        {
-            if (ball.exists)
-            {
-                std::function<void()> updateBall = [&] {
-                    UpdateBallSpeedData(state, ball);
-                    AdvanceOneBall(state, ball);
-                    CheckBlockBossCollis(state, ball);
-                    CheckPaddleCollis(state, ball);
-                    CheckEnemyCollis(state, ball);
-                    UpdateCeilCollisVSign(state, ball);
-                    HandleBlockCollis(state, ball);
-                    CheckBallLost(state, ball);
-
-                    if (ball.cycle > 0)
-                    {
-                        ball.speedMult--;
-                        if (ball.speedMult > 0)
-                        {
-                            updateBall();
-                        }
-                        else
-                        {
-                            ball.cycle--;
-                        }
-                    }
-                };
-
-                updateBall();
-            }
-        }
-    }
-
-    static inline void CheckPowerupCanBeCollected(GameState& state)
-    {
-        // Ensure at least one ball exists.
-        if (!(state.ball[0].exists || state.ball[1].exists || state.ball[2].exists)) return;
-
-        // Ensure there's a powerup around.
-        if (state.spawnedPowerup == Powerup::None) return;
-
-        const auto paddleTop = GameConsts::PaddleTop;
-        const auto paddleBot = GameConsts::PaddleTop + 4;
-        const auto paddleLeft = state.paddleX;
-        const auto paddleRight = state.paddleX + 8 + 8 + 8;
-
-        // Check if the powerup can be collected.
-        if (state.powerupPos.y + 8 >= paddleTop && paddleBot >= state.powerupPos.y
-            && state.powerupPos.x + 8 >= paddleLeft && state.powerupPos.x + 8 < paddleRight + 8)
-        {
-            state.ownedPowerup = state.spawnedPowerup;
-            state.spawnedPowerup = Powerup::None;
-
-            state.pendingScore += 1000;
-
-            // TODO other powerups
-            if (state.ownedPowerup == Powerup::Multiball)
-            {
-                GetMultiBallPowerup(state);
-            }
-        }
-    }
-
-    static inline void GetMultiBallPowerup(GameState& state)
-    {
-        state.ball[1] = state.ball[0];
-        state.ball[2] = state.ball[0];
-
-        const auto initAng = state.ball[0].angle;
-        if (initAng == Angle::Steep)
-        {
-            state.ball[1].angle = Angle::Normal;
-            state.ball[2].angle = Angle::Shallow;
-        }
-        else if (initAng == Angle::Normal)
-        {
-            state.ball[1].angle = Angle::Steep;
-            state.ball[2].angle = Angle::Shallow;
-        }
-        else if (initAng == Angle::Shallow)
-        {
-            state.ball[1].angle = Angle::Steep;
-            state.ball[2].angle = Angle::Normal;
-        }
-    }
-
-    static inline void UpdateTimers(GameState& state)
-    {
-        if (state.opState != OperationalState::Paused)
-        {
-            // TODO return if there's a loading timer active
-
-            // TODO handle title timer
-
-            // TODO handle auto-launch timer
-
-            for (auto&& timer : state.enemySpawnTimers)
-            {
-                if (timer > 0) timer--;
-            }
-        }
-    }
-
-    static inline void UpdateBallSpeedData(GameState& state, Ball& ball)
-    {
-        if (ball.cycle == 0)
-        {
-            std::vector<SpeedTableRow>* speedTable = nullptr;
-            if (ball.angle == Angle::Steep)
-            {
-                speedTable = &Data::SteepSpeedTable;
-            }
-            else if (ball.angle == Angle::Normal)
-            {
-                speedTable = &Data::NormalSpeedTable;
-            }
-            else
-            {
-                speedTable = &Data::ShallowSpeedTable;
-            }
-
-            ball.speedRow = &(*speedTable)[ball.speedStage];
-
-            ball.cycle = ball.speedRow->cycleLen;
-            ball.speedMult = 0;
-            if(_Pedantic) state.speedReduction = ball.speedRow->speedReduction;
-            ball.speedRowIdx = 0;
-        }
-
-        if (ball.speedMult == 0)
-        {
-            ball.speedMult = ball.speedRow->speedMult;
-        }
-
-        ball.vel.vy = ball.speedRow->vel[ball.speedRowIdx];
-        ball.vel.vx = ball.speedRow->vel[ball.speedRowIdx + 1];
-
-        ball.speedRowIdx += 2;
-    }
-
-    static inline void AdvanceOneBall(GameState& state, Ball& ball)
-    {
-        ball.xCollis = false;
-        ball.yCollis = false;
-        state.ceilCollis = false;
-
-        const auto moveBall = [&] {
-            ball.pos.x += ball.vel.vx * ball.vSign.vx;
-            ball.pos.y += ball.vel.vy * ball.vSign.vy;
-
-            if (ball.pos.x <= GameConsts::FieldMinX)
-            {
-                ball.pos.x = GameConsts::FieldMinX;
-                ball.xCollis = true;
-            }
-            if (ball.pos.x >= GameConsts::FieldMaxX)
-            {
-                ball.pos.x = GameConsts::FieldMaxX;
-                ball.xCollis = true;
-            }
-            if (ball.pos.y <= GameConsts::FieldMinY)
-            {
-                ball.pos.y = GameConsts::FieldMinY;
-                ball.yCollis = (ball.vSign.vy == -1);
-                state.ceilCollis = ball.yCollis;
-            }
-        };
-
-        moveBall();
-        
-        // Update ball a second time if there aren't any (wall) collisions, the ball
-        // is moving upwards, and it's at or below 0xcd.
-        if (ball.pos.y >= 0xcd && ball.vSign.vy == -1 && !ball.xCollis && !ball.yCollis)
-        {
-            moveBall();
-        }
-    }
-
-    static inline void CheckBlockBossCollis(GameState& state, Ball& ball)
-    {
-        state.blockCollisSide = { false, false, false, false };
-
-        if (ball.vel.vx == 0 && ball.vel.vy == 0) return;
-
-        if (state.level == GameConsts::BossLevel)
-        {
-            CheckBossCollis(state, ball);
-        }
-        else
-        {
-            CheckBlockCollis(state, ball);
-        }
-    }
-
-    //
-    //               y-overlap
-    //                   |
-    //                   |
-    //               |-------|
-    //     "This block"     "One right"
-    //    _______________ _______________
-    //   |               |               |
-    //   |           +---|---.           | ---
-    //   |___________:___|___:___________|  |----- x-overlap
-    //   |           :...|...:           | ---
-    //   |               |               |
-    //   |_______________|_______________|
-    //
-    //      "One Down"    "One Down-Right"
-    //
-    //
-
-    static inline void CheckBlockCollis(GameState& state, Ball& ball)
-    {
-        // If we're already full on collisions, return.
-        if (ball.xCollis && ball.yCollis) return;
-
-        Point posHi;
-        posHi.y = (ball.pos.y - GameConsts::FieldMinY) >> 3;
-
-        // If the ball is too low to hit any blocks, return.
-        if (posHi.y + 1 >= 0x18) return;
-
-        auto cellOverlapX = false;
-        auto cellOverlapY = false;
-
-        // Despite the name these are simply the "original" unmodified cell values.
-        const auto ballCellX = state.calculatedCell.x;
-        const auto ballCellY = state.calculatedCell.y;
-
-        // Use shorter names for clarity...
-        // This is also a shortcut for writing back the modified values;
-        // normally this'd happen just before the block proximity check.
-        auto& cellX = state.calculatedCell.x;
-        auto& cellY = state.calculatedCell.y;
-
-        Point posLo;
-        posLo.y = (ball.pos.y - GameConsts::FieldMinY) % 8;
-        posHi.x = (ball.pos.x - GameConsts::FieldMinX) >> 4;
-        posLo.x = (ball.pos.x - GameConsts::FieldMinX) % 16;
-
-        state.calculatedCell.x = posHi.x;
-        state.calculatedCell.y = posHi.y;
-
-        // const auto posHiOrig = posHi;
-        const auto posLoOrig = posLo;
-
-        if (state.level != 0 && !_Pedantic)
-        {
-            if ((Data::MinBlockRow[state.level] > 0 && posHi.y < Data::MinBlockRow[state.level] - 1)
-                || posHi.y > Data::MaxBlockRow[state.level] + 1)
-            {
-                if (ball.vSign.vx == -1 && !ball.xCollis && posLo.x == 0) cellX--;
-                if (ball.vSign.vy == -1 && !ball.yCollis && posLo.y == 0) cellY--;
-
-                return;
-            }
-        }
-
-        const auto snapDown = [&] {
-            if (posLo.y != 0)
-            {
-                posLo.y = 0;
-                posHi.y++;
-            }
-        };
-
-        const auto snapRight = [&] {
-            if (posLo.x != 0)
-            {
-                posLo.x = 0;
-                posHi.x++;
-            }
-        };
-
-        const auto snapLeft = [&] {
-            posLo.x = 0xc;
-        };
-
-        const auto snapUp = [&] {
-            posLo.y = 0x4;
-        };
-
-
-        auto bounceDown = [&] {
-            snapDown();
-            ball.yCollis = true;
-        };
-
-        auto bounceRight = [&] {
-            snapRight();
-            ball.xCollis = true;
-        };
-
-        auto bounceLeft = [&] {
-            snapLeft();
-            ball.xCollis = true;
-        };
-
-        auto bounceUp = [&] {
-            snapUp();
-            ball.yCollis = true;
-        };
-
-        if (ball.vSign.vx == -1 && ball.vSign.vy == -1)
-        {
-            // The ball is moving diagonally up-left.
-
-            if (!ball.yCollis)
-            {
-                if (posLo.y == 0)
-                {
-                    cellY--;
-                    cellOverlapY = true;
-                }
-
-                if(posLo.y >= 5)
-                {
-                    cellOverlapY = true;
-                }
-            }
-
-            if (!ball.xCollis)
-            {
-                if (posLo.x == 0)
-                {
-                    cellX--;
-                    cellOverlapX = true;
-                }
-
-                if(posLo.x >= 0xd)
-                {
-                    cellOverlapX = true;
-                }
-            }
-
-            auto prox = GetBlockProximity(state, cellX, cellY);
-
-            if (cellOverlapY && !cellOverlapX)
-            {
-                // The ball overlaps only the cell above.
-
-                // If there's no block here, nothing to do, so return.
-                if (!prox.thisBlock) return;
-
-                bounceDown();
-                state.blockCollisSide.thisBlock = true;
-            }
-            else if (cellOverlapX && !cellOverlapY)
-            {
-                // The ball overlaps only the cell to the left.
-
-                // If there's no block here, nothing to do, so return.
-                if (!prox.thisBlock) return;
-
-                bounceRight();
-                state.blockCollisSide.thisBlock = true;
-            }
-            else if (cellOverlapX && cellOverlapY)
-            {
-                // The ball overlaps the cell to the left and above.
-
-                if (prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // The only block around is this one.
-
-                    auto cornerBounce = [&] {
-                        bounceDown();
-                        bounceRight();
-                    };
-
-                    if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy) cornerBounce(); // Perfectly aligned to the block corner, and moving perfectly diagonally -> corner bounce
-                    else if (posLo.y == 0) bounceDown(); // exactly against the bottom of the block -> bounce down
-                    else if (posLo.x == 0) bounceRight(); // exactly against the left side of the block -> bounce right
-                    else if (posHi.y == ballCellY) bounceRight(); // not precisely against the bottom side of the block -> bounce right
-                    else if (posHi.x == ballCellX) bounceDown(); // not precisely against the left side of the block -> bounce down
-                    else cornerBounce(); // shouldn't get here, but otherwise -> corner bounce
-
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // The only block around is to the right.
-
-                    bounceDown();
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && !prox.oneRight && prox.oneDown && !prox.oneDownRight)
-                {
-                    // The only block around is below.
-
-                    bounceRight();
-                    state.blockCollisSide = prox;
-                }
-                else if (prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // Blocks here and to the right.
-
-                    bounceDown();
-
-                    if (posLo.x == 0xf)
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                }
-                else if (prox.thisBlock && !prox.oneRight && prox.oneDown && !prox.oneDownRight)
-                {
-                    // Blocks here and below.
-
-                    bounceRight();
-
-                    if (posLo.y == 7)
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                }
-                else if (!prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // No blocks around at all, return.
-                    return;
-                }
-                else if ((!prox.thisBlock && prox.oneRight && prox.oneDown && !prox.oneDownRight)
-                        || (prox.thisBlock && prox.oneRight && prox.oneDown && !prox.oneDownRight))
-                {
-                    // One block down, one block right OR all blocks but the one down-right.
-                    // Theory: these are combined since it doesn't really matter if "this block"
-                    // exists; the ball is colliding with the top or side block first anyway.
-
-                    bounceDown();
-                    bounceRight();
-
-                    // Select either oneRight or oneDown as the collision side. By default pick
-                    // oneDown, but if oneRight isn't gold, pick oneRight.
-                    const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(getBlock(state.blocks, index + 1)) != BlockType::Gold)
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                }
-            }
-        }
-        else if (ball.vSign.vx == 1 && ball.vSign.vy == -1)
-        {
-            // The ball is moving diagonally up-right.
-
-            if (!ball.yCollis)
-            {
-                if (posLo.y == 0)
-                {
-                    cellY--;
-                    cellOverlapY = true;
-                }
-
-                if (posLo.y >= 5)
-                {
-                    cellOverlapY = true;
-                }
-            }
-
-            if (!ball.xCollis)
-            {
-                if (posLo.x >= 0xc)
-                {
-                    cellOverlapX = true;
-                }
-            }
-
-            auto prox = GetBlockProximity(state, cellX, cellY);
-
-            if (cellOverlapY && !cellOverlapX)
-            {
-                // The ball overlaps only the cell above.
-
-                // If there's no block here, nothing to do, so return.
-                if (!prox.thisBlock) return;
-
-                bounceDown();
-                state.blockCollisSide.thisBlock = true;
-            }
-            else if (cellOverlapX && !cellOverlapY)
-            {
-                // The ball overlaps only the cell to the right.
-
-                if (!prox.oneRight) return;
-
-                bounceLeft();
-                state.blockCollisSide.oneRight = true;
-            }
-            else if (cellOverlapX && cellOverlapY)
-            {
-                // The ball overlaps the cell to the left and above.
-
-                if (!prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // The only block around is to the right.
-
-                    auto cornerBounce = [&] {
-                        bounceDown();
-                        bounceLeft();
-                    };
-
-                    if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy) cornerBounce(); // No coverage
-                    else if (posLo.y == 0) bounceDown();
-                    else if (posLo.x == 0xc) bounceLeft();
-                    else if (posLo.y == ballCellY) bounceLeft();  // No coverage - note possible bug, would expect comparison with high bits
-                    else if (posLoOrig.y == 0) bounceLeft();  // No coverage
-                    else if (posLoOrig.x < 0xc) cornerBounce();  // No coverage
-                    else bounceDown();
-
-                    state.blockCollisSide = prox;
-                }
-                else if (prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight) // 0x8
-                {
-                    // The only block around is this one.
-
-                    bounceDown();
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && !prox.oneRight && !prox.oneDown && prox.oneDownRight) // 0x1
-                {
-                    // The only block around is one-down-right.
-
-                    bounceLeft();
-                    state.blockCollisSide = prox;
-                }
-                else if (prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
-                {
-                    // This block and the one to the right exist.
-
-                    bounceDown();
-
-                    if (posLo.x == 0xf)
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                }
-                else if (!prox.thisBlock && prox.oneRight && !prox.oneDown && prox.oneDownRight)
-                {
-                    // One block right and one block down-right exist.
-
-                    bounceLeft();
-
-                    if (posLo.y == 7)
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                }
-                else if((prox.thisBlock && prox.oneRight && !prox.oneDown && prox.oneDownRight)
-                        || (prox.thisBlock && !prox.oneRight && !prox.oneDown && prox.oneDownRight))
-                {
-                    // This block + one block down-right OR all blocks but the one down.
-                    // Theory: these are combined since it doesn't really matter if the
-                    // "one right" block exists; the ball is colliding with the top or
-                    // side block first anyway.
-
-                    bounceDown();
-                    bounceLeft();
-
-                    const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-
-                    // Select either thisBlock or oneDownRight as the collision side. By default pick
-                    // oneDownRight, but if thisBlock isn't gold, pick thisBlock.
-                    if (BlkType(getBlock(state.blocks, index)) != BlockType::Gold)
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                }
-            }
-        }
-        else if (ball.vSign.vx == -1 && ball.vSign.vy == 1)
-        {
-            // The ball is moving diagonally down-left.
-
-            if (posLo.y >= 4)
-            {
-                cellOverlapY = true;
-            }
-
-            if (!ball.xCollis)
-            {
-                if (posLo.x == 0)
-                {
-                    cellX--;
-                    cellOverlapX = true;
-                }
-
-                if (posLo.x >= 0xd)
-                {
-                    cellOverlapX = true;
-                }
-            }
-
-            auto prox = GetBlockProximity(state, cellX, cellY);
-
-            if (!cellOverlapX && cellOverlapY)
-            {
-                // The block overlaps only the cell below.
-
-                // If there's only a y-overlap and no block below, nothing to do, so return.
-                if (!prox.oneDown) return;
-
-                bounceUp();
-                state.blockCollisSide.oneDown = true;
-            }
-            else if (cellOverlapX && !cellOverlapY)
-            {
-                // The block overlaps only the cell to the left.
-
-                // If there's only an x-overlap and no block here, nothing to do, so return.
-                if (!prox.thisBlock) return;
-
-                bounceRight();
-                state.blockCollisSide.thisBlock = true;
-            }
-            else if (cellOverlapX && cellOverlapY)
-            {
-                if (!prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight)
-                {
-                    auto cornerBounce = [&] {
-                        bounceUp();
-                        bounceRight();
-                    };
-
-                    if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy) cornerBounce(); // No coverage
-                    else if (posLo.y == 4) bounceUp();
-                    else if (posLo.x == 0) bounceRight();
-                    else if (posHi.x == ballCellX) bounceUp();
-                    else cornerBounce();
-
-                    state.blockCollisSide = prox;
-                }
-                else if (prox.thisBlock && !prox.oneDown && !prox.oneRight && !prox.oneDownRight)
-                {
-                    bounceRight();
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x1
-                {
-                    bounceUp();
-                    state.blockCollisSide = prox;
-                }
-                else if (prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight) // 0xA
-                {
-                    bounceRight();
-
-                    if (posLo.y == 7)
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                }
-                else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x3
-                {
-                    bounceUp();
-
-                    if (posLo.x == 0xf)
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                }
-                else if ((prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight)
-                    || (prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight))
-                {
-                    bounceUp();
-                    bounceRight();
-
-                    // Select either thisBlock or oneDownRight as the collision side. By default pick
-                    // thisBlock, but if it's gold and oneDownRight is not, switch to oneDownRight.
-                    const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(getBlock(state.blocks, index)) == BlockType::Gold
-                        && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow + 1)) != BlockType::Gold)
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.thisBlock = true;
-                    }
-                }
-            }
-        }
-        else
-        {
-            // The ball is moving diagonally down-right.
-
-            if (posLo.y >= 4)
-            {
-                cellOverlapY = true;
-            }
-
-            if (!ball.xCollis)
-            {
-                if (posLo.x >= 0xc)
-                {
-                    cellOverlapX = true;
-                }
-            }
-
-            auto prox = GetBlockProximity(state, cellX, cellY);
-
-            if (!cellOverlapX && cellOverlapY)
-            {
-                // The block overlaps only the cell below.
-
-                // If there's no block directly below, nothing to do, so return.
-                if (!prox.oneDown) return;
-
-                bounceUp();
-                state.blockCollisSide.oneDown = true;
-            }
-            else if (cellOverlapX && !cellOverlapY)
-            {
-                // The block overlaps only the cell to the right.
-
-                // If there's no block to the right, nothing to do, so return.
-                if (!prox.oneRight) return;
-
-                bounceLeft();
-                state.blockCollisSide.oneRight = true;
-            }
-            else if (cellOverlapX && cellOverlapY)
-            {
-                if (!prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x1
-                {
-                    auto cornerBounce = [&] {
-                        bounceUp();
-                        bounceLeft();
-                    };
-
-                    if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy) cornerBounce();
-                    else if (posLo.y == 4) bounceUp();
-                    else if (posLo.x == 0xc) bounceLeft();
-                    else if (posLoOrig.y >= 4) bounceLeft();
-                    else if (posLoOrig.x < 0xc) cornerBounce();
-                    else bounceUp();
-
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && !prox.oneDown && prox.oneRight && !prox.oneDownRight) // 0x4
-                {
-                    bounceLeft();
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight) // 0x2
-                {
-                    bounceUp();
-                    state.blockCollisSide = prox;
-                }
-                else if (!prox.thisBlock && !prox.oneDown && prox.oneRight && prox.oneDownRight) // 0x5
-                {
-                    bounceLeft();
-
-                    if (posLo.y == 7)
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                }
-                else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x3
-                {
-                    bounceUp();
-
-                    if (posLo.x == 0xf)
-                    {
-                        state.blockCollisSide.oneDownRight = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                }
-                else if ((!prox.thisBlock && prox.oneDown && prox.oneRight && !prox.oneDownRight) // 0x6
-                        || (!prox.thisBlock && prox.oneDown && prox.oneRight && prox.oneDownRight)) // 0x7
-                {
-                    bounceUp();
-                    bounceLeft();
-
-                    // Select either oneRight or oneDown as the collision side. By default pick
-                    // oneRight, but if it's gold and oneDown is not, switch to oneDown.
-                    const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-                    if (BlkType(getBlock(state.blocks, index + 1)) == BlockType::Gold
-                        && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow)) != BlockType::Gold)
-                    {
-                        state.blockCollisSide.oneDown = true;
-                    }
-                    else
-                    {
-                        state.blockCollisSide.oneRight = true;
-                    }
-                }
-            }
-        }
-    }
-
-    static inline void CheckBossCollis(GameState& state, Ball& ball)
-    {
-        if (ball.pos.y + 3 >= 0x28 && ball.pos.y < 0x88
-            && ball.pos.x + 3 >= 0x50 && ball.pos.x < 0x80)
-        {
-            state.bossHits++;
-            
-            const auto doCollisY = [&] {
-                ball.yCollis = true;
-                if (ball.vSign.vy == 1 && ball.pos.y > 0x24)
-                {
-                    ball.pos.y = 0x24;
-                }
-                else if(ball.vSign.vy == -1 && ball.pos.y < 0x88)
-                {
-                    ball.pos.y = 0x88;
-                }
-            };
-
-            const auto doCollisX = [&] {
-                ball.xCollis = true;
-                if (ball.vSign.vx == 1 && ball.pos.x > 0x4c)
-                {
-                    ball.pos.x = 0x4c;
-                }
-                else if (ball.vSign.vx == -1 && ball.pos.x < 0x80)
-                {
-                    ball.pos.x = 0x80;
-                }
-            };
-
-            if (ball.vSign.vy == -1)
-            {
-                if (ball.pos.y + 4 > 0x88)
-                {
-                    doCollisY();
-                }
-                else
-                {
-                    doCollisX();
-                }
-            }
-            else
-            {
-                if (ball.pos.y < 0x28)
-                {
-                    doCollisY();
-                }
-                else
-                {
-                    doCollisX();
-                }
-            }
-        }
-    }
-
-    static inline Proximity GetBlockProximity(GameState& state, const unsigned int cellX, const unsigned int cellY)
-    {
-        const auto index = cellY * GameConsts::BlocksPerRow + cellX;
-
-        const auto isBlockPresent = [&](unsigned int index) -> bool {
-            if (index >= GameConsts::BlockTableSize)
-            {
-                return false;
-            }
-
-            return (getBlock(state.blocks, index) != Block(0));
-        };
-
-        return { isBlockPresent(index),
-            isBlockPresent(index + 1),
-            isBlockPresent(index + GameConsts::BlocksPerRow),
-            isBlockPresent(index + GameConsts::BlocksPerRow + 1) };
-    }
-
-    static inline void CheckPaddleCollis(GameState& state, Ball& ball)
-    {
-        state.paddleCollis = false;
-        ball._paddleCollis = false;
-
-        // No collision if the ball is moving upwards.
-        if (ball.vSign.vy == -1) return;
-
-        const auto paddleLeftEdge = state.paddleX;
-        const auto paddleLeftCenter = paddleLeftEdge + 8;
-        const auto paddleRightCenter = paddleLeftCenter + 8;
-        const auto paddleRightEdge = paddleRightCenter + 8; // TODO handle large paddle etc.
-
-        // No collision if the ball is too far above or below the paddle.
-        if (ball.pos.y + 4 < GameConsts::PaddleTop) return;
-        if (GameConsts::PaddleTop + 3 < ball.pos.y) return;
-
-        // No collision if the ball is too far from the paddle sides.
-        if (ball.pos.x + 4 < paddleLeftEdge) return;
-        if (ball.pos.x - 8 >= paddleRightEdge) return;
-
-        if (ball.pos.x < paddleLeftEdge)
-        {
-            ball.angle = Angle::Shallow;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = -1;
-        }
-        else if (ball.pos.x < paddleLeftCenter)
-        {
-            ball.angle = Angle::Normal;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = -1;
-        }
-        else if (ball.pos.x + 1 < paddleRightCenter)
-        {
-            ball.angle = Angle::Steep;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = -1;
-        }
-        else if (ball.pos.x < paddleRightEdge)
-        {
-            ball.angle = Angle::Steep;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = 1;
-        }
-        else if (ball.pos.x - paddleRightEdge < 5)
-        {
-            ball.angle = Angle::Normal;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = 1;
-        }
-        else if (ball.pos.x - paddleRightEdge < 8)
-        {
-            ball.angle = Angle::Shallow;
-            ball.vSign.vy = -1;
-            ball.vSign.vx = 1;
-        }
-        else
-        {
+  }
+
+  static inline void CheckPaddleMove(GameState &state)
+  {
+    const auto ballsExist = (state.ball[0].exists || state.ball[1].exists || state.ball[2].exists);
+
+    // TODO other checks?
+    if (!_Pedantic || (ballsExist && state.opState != OperationalState::Paused && state.currentBlocks > 0)) { DoPaddleMove(state, state.potPosX); }
+  }
+
+  static inline void DoPaddleMove(GameState &state, int potPosX)
+  {
+    // Now setting paddle position
+    state.paddleX = potPosX;
+
+    // If  we still have the ball, we bring it with us
+    if (state.opState == OperationalState::BallNotLaunched) state.ball[0].pos.x = potPosX + 16;
+  }
+
+  static inline void UpdateActiveBalls(GameState &state)
+  {
+    state.blockCollisCount = 0;
+
+    if (state.opState != OperationalState::BallLaunched) return;
+    if (state.currentBlocks == 0 && state.level != GameConsts::BossLevel) return;
+
+    if (_Pedantic)
+      {
+        if (state.speedReduction > 0)
+          {
+            state.speedReduction--;
             return;
         }
+    }
 
-        state.speedReduction = 0;
-        ball.speedStage = state.overallSpeedStage;
-        ball.speedStageM = state.overallSpeedStageM;
+    for (auto &&ball : state.ball)
+      {
+        if (ball.exists)
+          {
+            std::function<void()> updateBall = [&] {
+              UpdateBallSpeedData(state, ball);
+              AdvanceOneBall(state, ball);
+              CheckBlockBossCollis(state, ball);
+              CheckPaddleCollis(state, ball);
+              CheckEnemyCollis(state, ball);
+              UpdateCeilCollisVSign(state, ball);
+              HandleBlockCollis(state, ball);
+              CheckBallLost(state, ball);
+
+              if (ball.cycle > 0)
+                {
+                  ball.speedMult--;
+                  if (ball.speedMult > 0)
+                    {
+                      updateBall();
+                  } else
+                    {
+                      ball.cycle--;
+                    }
+              }
+            };
+
+            updateBall();
+        }
+      }
+  }
+
+  static inline void CheckPowerupCanBeCollected(GameState &state)
+  {
+    // Ensure at least one ball exists.
+    if (!(state.ball[0].exists || state.ball[1].exists || state.ball[2].exists)) return;
+
+    // Ensure there's a powerup around.
+    if (state.spawnedPowerup == Powerup::None) return;
+
+    const auto paddleTop   = GameConsts::PaddleTop;
+    const auto paddleBot   = GameConsts::PaddleTop + 4;
+    const auto paddleLeft  = state.paddleX;
+    const auto paddleRight = state.paddleX + 8 + 8 + 8;
+
+    // Check if the powerup can be collected.
+    if (state.powerupPos.y + 8 >= paddleTop && paddleBot >= state.powerupPos.y && state.powerupPos.x + 8 >= paddleLeft && state.powerupPos.x + 8 < paddleRight + 8)
+      {
+        state.ownedPowerup   = state.spawnedPowerup;
+        state.spawnedPowerup = Powerup::None;
+
+        state.pendingScore += 1000;
+
+        // TODO other powerups
+        if (state.ownedPowerup == Powerup::Multiball) { GetMultiBallPowerup(state); }
+    }
+  }
+
+  static inline void GetMultiBallPowerup(GameState &state)
+  {
+    state.ball[1] = state.ball[0];
+    state.ball[2] = state.ball[0];
+
+    const auto initAng = state.ball[0].angle;
+    if (initAng == Angle::Steep)
+      {
+        state.ball[1].angle = Angle::Normal;
+        state.ball[2].angle = Angle::Shallow;
+    } else if (initAng == Angle::Normal)
+      {
+        state.ball[1].angle = Angle::Steep;
+        state.ball[2].angle = Angle::Shallow;
+    } else if (initAng == Angle::Shallow)
+      {
+        state.ball[1].angle = Angle::Steep;
+        state.ball[2].angle = Angle::Normal;
+    }
+  }
+
+  static inline void UpdateTimers(GameState &state)
+  {
+    if (state.opState != OperationalState::Paused)
+      {
+        // TODO return if there's a loading timer active
+
+        // TODO handle title timer
+
+        // TODO handle auto-launch timer
+
+        for (auto &&timer : state.enemySpawnTimers)
+          {
+            if (timer > 0) timer--;
+          }
+    }
+  }
+
+  static inline void UpdateBallSpeedData(GameState &state, Ball &ball)
+  {
+    if (ball.cycle == 0)
+      {
+        std::vector<SpeedTableRow> *speedTable = nullptr;
+        if (ball.angle == Angle::Steep)
+          {
+            speedTable = &Data::SteepSpeedTable;
+        } else if (ball.angle == Angle::Normal)
+          {
+            speedTable = &Data::NormalSpeedTable;
+        } else
+          {
+            speedTable = &Data::ShallowSpeedTable;
+          }
+
+        ball.speedRow = &(*speedTable)[ball.speedStage];
+
+        ball.cycle     = ball.speedRow->cycleLen;
+        ball.speedMult = 0;
+        if (_Pedantic) state.speedReduction = ball.speedRow->speedReduction;
+        ball.speedRowIdx = 0;
+    }
+
+    if (ball.speedMult == 0) { ball.speedMult = ball.speedRow->speedMult; }
+
+    ball.vel.vy = ball.speedRow->vel[ball.speedRowIdx];
+    ball.vel.vx = ball.speedRow->vel[ball.speedRowIdx + 1];
+
+    ball.speedRowIdx += 2;
+  }
+
+  static inline void AdvanceOneBall(GameState &state, Ball &ball)
+  {
+    ball.xCollis     = false;
+    ball.yCollis     = false;
+    state.ceilCollis = false;
+
+    const auto moveBall = [&] {
+      ball.pos.x += ball.vel.vx * ball.vSign.vx;
+      ball.pos.y += ball.vel.vy * ball.vSign.vy;
+
+      if (ball.pos.x <= GameConsts::FieldMinX)
+        {
+          ball.pos.x   = GameConsts::FieldMinX;
+          ball.xCollis = true;
+      }
+      if (ball.pos.x >= GameConsts::FieldMaxX)
+        {
+          ball.pos.x   = GameConsts::FieldMaxX;
+          ball.xCollis = true;
+      }
+      if (ball.pos.y <= GameConsts::FieldMinY)
+        {
+          ball.pos.y       = GameConsts::FieldMinY;
+          ball.yCollis     = (ball.vSign.vy == -1);
+          state.ceilCollis = ball.yCollis;
+      }
+    };
+
+    moveBall();
+
+    // Update ball a second time if there aren't any (wall) collisions, the ball
+    // is moving upwards, and it's at or below 0xcd.
+    if (ball.pos.y >= 0xcd && ball.vSign.vy == -1 && !ball.xCollis && !ball.yCollis) { moveBall(); }
+  }
+
+  static inline void CheckBlockBossCollis(GameState &state, Ball &ball)
+  {
+    state.blockCollisSide = {false, false, false, false};
+
+    if (ball.vel.vx == 0 && ball.vel.vy == 0) return;
+
+    if (state.level == GameConsts::BossLevel)
+      {
+        CheckBossCollis(state, ball);
+    } else
+      {
+        CheckBlockCollis(state, ball);
+      }
+  }
+
+  //
+  //               y-overlap
+  //                   |
+  //                   |
+  //               |-------|
+  //     "This block"     "One right"
+  //    _______________ _______________
+  //   |               |               |
+  //   |           +---|---.           | ---
+  //   |___________:___|___:___________|  |----- x-overlap
+  //   |           :...|...:           | ---
+  //   |               |               |
+  //   |_______________|_______________|
+  //
+  //      "One Down"    "One Down-Right"
+  //
+  //
+
+  static inline void CheckBlockCollis(GameState &state, Ball &ball)
+  {
+    // If we're already full on collisions, return.
+    if (ball.xCollis && ball.yCollis) return;
+
+    Point posHi;
+    posHi.y = (ball.pos.y - GameConsts::FieldMinY) >> 3;
+
+    // If the ball is too low to hit any blocks, return.
+    if (posHi.y + 1 >= 0x18) return;
+
+    auto cellOverlapX = false;
+    auto cellOverlapY = false;
+
+    // Despite the name these are simply the "original" unmodified cell values.
+    const auto ballCellX = state.calculatedCell.x;
+    const auto ballCellY = state.calculatedCell.y;
+
+    // Use shorter names for clarity...
+    // This is also a shortcut for writing back the modified values;
+    // normally this'd happen just before the block proximity check.
+    auto &cellX = state.calculatedCell.x;
+    auto &cellY = state.calculatedCell.y;
+
+    Point posLo;
+    posLo.y = (ball.pos.y - GameConsts::FieldMinY) % 8;
+    posHi.x = (ball.pos.x - GameConsts::FieldMinX) >> 4;
+    posLo.x = (ball.pos.x - GameConsts::FieldMinX) % 16;
+
+    state.calculatedCell.x = posHi.x;
+    state.calculatedCell.y = posHi.y;
+
+    // const auto posHiOrig = posHi;
+    const auto posLoOrig = posLo;
+
+    if (state.level != 0 && !_Pedantic)
+      {
+        if ((Data::MinBlockRow[state.level] > 0 && posHi.y < Data::MinBlockRow[state.level] - 1) || posHi.y > Data::MaxBlockRow[state.level] + 1)
+          {
+            if (ball.vSign.vx == -1 && !ball.xCollis && posLo.x == 0) cellX--;
+            if (ball.vSign.vy == -1 && !ball.yCollis && posLo.y == 0) cellY--;
+
+            return;
+        }
+    }
+
+    const auto snapDown = [&] {
+      if (posLo.y != 0)
+        {
+          posLo.y = 0;
+          posHi.y++;
+      }
+    };
+
+    const auto snapRight = [&] {
+      if (posLo.x != 0)
+        {
+          posLo.x = 0;
+          posHi.x++;
+      }
+    };
+
+    const auto snapLeft = [&] { posLo.x = 0xc; };
+
+    const auto snapUp = [&] { posLo.y = 0x4; };
+
+    auto bounceDown = [&] {
+      snapDown();
+      ball.yCollis = true;
+    };
+
+    auto bounceRight = [&] {
+      snapRight();
+      ball.xCollis = true;
+    };
+
+    auto bounceLeft = [&] {
+      snapLeft();
+      ball.xCollis = true;
+    };
+
+    auto bounceUp = [&] {
+      snapUp();
+      ball.yCollis = true;
+    };
+
+    if (ball.vSign.vx == -1 && ball.vSign.vy == -1)
+      {
+        // The ball is moving diagonally up-left.
+
+        if (!ball.yCollis)
+          {
+            if (posLo.y == 0)
+              {
+                cellY--;
+                cellOverlapY = true;
+            }
+
+            if (posLo.y >= 5) { cellOverlapY = true; }
+        }
+
+        if (!ball.xCollis)
+          {
+            if (posLo.x == 0)
+              {
+                cellX--;
+                cellOverlapX = true;
+            }
+
+            if (posLo.x >= 0xd) { cellOverlapX = true; }
+        }
+
+        auto prox = GetBlockProximity(state, cellX, cellY);
+
+        if (cellOverlapY && !cellOverlapX)
+          {
+            // The ball overlaps only the cell above.
+
+            // If there's no block here, nothing to do, so return.
+            if (!prox.thisBlock) return;
+
+            bounceDown();
+            state.blockCollisSide.thisBlock = true;
+        } else if (cellOverlapX && !cellOverlapY)
+          {
+            // The ball overlaps only the cell to the left.
+
+            // If there's no block here, nothing to do, so return.
+            if (!prox.thisBlock) return;
+
+            bounceRight();
+            state.blockCollisSide.thisBlock = true;
+        } else if (cellOverlapX && cellOverlapY)
+          {
+            // The ball overlaps the cell to the left and above.
+
+            if (prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // The only block around is this one.
+
+                auto cornerBounce = [&] {
+                  bounceDown();
+                  bounceRight();
+                };
+
+                if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy)
+                  cornerBounce(); // Perfectly aligned to the block corner, and moving perfectly diagonally -> corner bounce
+                else if (posLo.y == 0)
+                  bounceDown(); // exactly against the bottom of the block -> bounce down
+                else if (posLo.x == 0)
+                  bounceRight(); // exactly against the left side of the block -> bounce right
+                else if (posHi.y == ballCellY)
+                  bounceRight(); // not precisely against the bottom side of the block -> bounce right
+                else if (posHi.x == ballCellX)
+                  bounceDown(); // not precisely against the left side of the block -> bounce down
+                else
+                  cornerBounce(); // shouldn't get here, but otherwise -> corner bounce
+
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // The only block around is to the right.
+
+                bounceDown();
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && !prox.oneRight && prox.oneDown && !prox.oneDownRight)
+              {
+                // The only block around is below.
+
+                bounceRight();
+                state.blockCollisSide = prox;
+            } else if (prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // Blocks here and to the right.
+
+                bounceDown();
+
+                if (posLo.x == 0xf)
+                  {
+                    state.blockCollisSide.oneRight = true;
+                } else
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                  }
+            } else if (prox.thisBlock && !prox.oneRight && prox.oneDown && !prox.oneDownRight)
+              {
+                // Blocks here and below.
+
+                bounceRight();
+
+                if (posLo.y == 7)
+                  {
+                    state.blockCollisSide.oneDown = true;
+                } else
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                  }
+            } else if (!prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // No blocks around at all, return.
+                return;
+            } else if ((!prox.thisBlock && prox.oneRight && prox.oneDown && !prox.oneDownRight) || (prox.thisBlock && prox.oneRight && prox.oneDown && !prox.oneDownRight))
+              {
+                // One block down, one block right OR all blocks but the one down-right.
+                // Theory: these are combined since it doesn't really matter if "this block"
+                // exists; the ball is colliding with the top or side block first anyway.
+
+                bounceDown();
+                bounceRight();
+
+                // Select either oneRight or oneDown as the collision side. By default pick
+                // oneDown, but if oneRight isn't gold, pick oneRight.
+                const auto index = cellY * GameConsts::BlocksPerRow + cellX;
+                if (BlkType(getBlock(state.blocks, index + 1)) != BlockType::Gold)
+                  {
+                    state.blockCollisSide.oneRight = true;
+                } else
+                  {
+                    state.blockCollisSide.oneDown = true;
+                  }
+            }
+        }
+    } else if (ball.vSign.vx == 1 && ball.vSign.vy == -1)
+      {
+        // The ball is moving diagonally up-right.
+
+        if (!ball.yCollis)
+          {
+            if (posLo.y == 0)
+              {
+                cellY--;
+                cellOverlapY = true;
+            }
+
+            if (posLo.y >= 5) { cellOverlapY = true; }
+        }
+
+        if (!ball.xCollis)
+          {
+            if (posLo.x >= 0xc) { cellOverlapX = true; }
+        }
+
+        auto prox = GetBlockProximity(state, cellX, cellY);
+
+        if (cellOverlapY && !cellOverlapX)
+          {
+            // The ball overlaps only the cell above.
+
+            // If there's no block here, nothing to do, so return.
+            if (!prox.thisBlock) return;
+
+            bounceDown();
+            state.blockCollisSide.thisBlock = true;
+        } else if (cellOverlapX && !cellOverlapY)
+          {
+            // The ball overlaps only the cell to the right.
+
+            if (!prox.oneRight) return;
+
+            bounceLeft();
+            state.blockCollisSide.oneRight = true;
+        } else if (cellOverlapX && cellOverlapY)
+          {
+            // The ball overlaps the cell to the left and above.
+
+            if (!prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // The only block around is to the right.
+
+                auto cornerBounce = [&] {
+                  bounceDown();
+                  bounceLeft();
+                };
+
+                if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy)
+                  cornerBounce(); // No coverage
+                else if (posLo.y == 0)
+                  bounceDown();
+                else if (posLo.x == 0xc)
+                  bounceLeft();
+                else if (posLo.y == ballCellY)
+                  bounceLeft(); // No coverage - note possible bug, would expect comparison with high bits
+                else if (posLoOrig.y == 0)
+                  bounceLeft(); // No coverage
+                else if (posLoOrig.x < 0xc)
+                  cornerBounce(); // No coverage
+                else
+                  bounceDown();
+
+                state.blockCollisSide = prox;
+            } else if (prox.thisBlock && !prox.oneRight && !prox.oneDown && !prox.oneDownRight) // 0x8
+              {
+                // The only block around is this one.
+
+                bounceDown();
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && !prox.oneRight && !prox.oneDown && prox.oneDownRight) // 0x1
+              {
+                // The only block around is one-down-right.
+
+                bounceLeft();
+                state.blockCollisSide = prox;
+            } else if (prox.thisBlock && prox.oneRight && !prox.oneDown && !prox.oneDownRight)
+              {
+                // This block and the one to the right exist.
+
+                bounceDown();
+
+                if (posLo.x == 0xf)
+                  {
+                    state.blockCollisSide.oneRight = true;
+                } else
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                  }
+            } else if (!prox.thisBlock && prox.oneRight && !prox.oneDown && prox.oneDownRight)
+              {
+                // One block right and one block down-right exist.
+
+                bounceLeft();
+
+                if (posLo.y == 7)
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                } else
+                  {
+                    state.blockCollisSide.oneRight = true;
+                  }
+            } else if ((prox.thisBlock && prox.oneRight && !prox.oneDown && prox.oneDownRight) || (prox.thisBlock && !prox.oneRight && !prox.oneDown && prox.oneDownRight))
+              {
+                // This block + one block down-right OR all blocks but the one down.
+                // Theory: these are combined since it doesn't really matter if the
+                // "one right" block exists; the ball is colliding with the top or
+                // side block first anyway.
+
+                bounceDown();
+                bounceLeft();
+
+                const auto index = cellY * GameConsts::BlocksPerRow + cellX;
+
+                // Select either thisBlock or oneDownRight as the collision side. By default pick
+                // oneDownRight, but if thisBlock isn't gold, pick thisBlock.
+                if (BlkType(getBlock(state.blocks, index)) != BlockType::Gold)
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                } else
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                  }
+            }
+        }
+    } else if (ball.vSign.vx == -1 && ball.vSign.vy == 1)
+      {
+        // The ball is moving diagonally down-left.
+
+        if (posLo.y >= 4) { cellOverlapY = true; }
+
+        if (!ball.xCollis)
+          {
+            if (posLo.x == 0)
+              {
+                cellX--;
+                cellOverlapX = true;
+            }
+
+            if (posLo.x >= 0xd) { cellOverlapX = true; }
+        }
+
+        auto prox = GetBlockProximity(state, cellX, cellY);
+
+        if (!cellOverlapX && cellOverlapY)
+          {
+            // The block overlaps only the cell below.
+
+            // If there's only a y-overlap and no block below, nothing to do, so return.
+            if (!prox.oneDown) return;
+
+            bounceUp();
+            state.blockCollisSide.oneDown = true;
+        } else if (cellOverlapX && !cellOverlapY)
+          {
+            // The block overlaps only the cell to the left.
+
+            // If there's only an x-overlap and no block here, nothing to do, so return.
+            if (!prox.thisBlock) return;
+
+            bounceRight();
+            state.blockCollisSide.thisBlock = true;
+        } else if (cellOverlapX && cellOverlapY)
+          {
+            if (!prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight)
+              {
+                auto cornerBounce = [&] {
+                  bounceUp();
+                  bounceRight();
+                };
+
+                if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy)
+                  cornerBounce(); // No coverage
+                else if (posLo.y == 4)
+                  bounceUp();
+                else if (posLo.x == 0)
+                  bounceRight();
+                else if (posHi.x == ballCellX)
+                  bounceUp();
+                else
+                  cornerBounce();
+
+                state.blockCollisSide = prox;
+            } else if (prox.thisBlock && !prox.oneDown && !prox.oneRight && !prox.oneDownRight)
+              {
+                bounceRight();
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x1
+              {
+                bounceUp();
+                state.blockCollisSide = prox;
+            } else if (prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight) // 0xA
+              {
+                bounceRight();
+
+                if (posLo.y == 7)
+                  {
+                    state.blockCollisSide.oneDown = true;
+                } else
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                  }
+            } else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x3
+              {
+                bounceUp();
+
+                if (posLo.x == 0xf)
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                } else
+                  {
+                    state.blockCollisSide.oneDown = true;
+                  }
+            } else if ((prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight) || (prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight))
+              {
+                bounceUp();
+                bounceRight();
+
+                // Select either thisBlock or oneDownRight as the collision side. By default pick
+                // thisBlock, but if it's gold and oneDownRight is not, switch to oneDownRight.
+                const auto index = cellY * GameConsts::BlocksPerRow + cellX;
+                if (BlkType(getBlock(state.blocks, index)) == BlockType::Gold && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow + 1)) != BlockType::Gold)
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                } else
+                  {
+                    state.blockCollisSide.thisBlock = true;
+                  }
+            }
+        }
+    } else
+      {
+        // The ball is moving diagonally down-right.
+
+        if (posLo.y >= 4) { cellOverlapY = true; }
+
+        if (!ball.xCollis)
+          {
+            if (posLo.x >= 0xc) { cellOverlapX = true; }
+        }
+
+        auto prox = GetBlockProximity(state, cellX, cellY);
+
+        if (!cellOverlapX && cellOverlapY)
+          {
+            // The block overlaps only the cell below.
+
+            // If there's no block directly below, nothing to do, so return.
+            if (!prox.oneDown) return;
+
+            bounceUp();
+            state.blockCollisSide.oneDown = true;
+        } else if (cellOverlapX && !cellOverlapY)
+          {
+            // The block overlaps only the cell to the right.
+
+            // If there's no block to the right, nothing to do, so return.
+            if (!prox.oneRight) return;
+
+            bounceLeft();
+            state.blockCollisSide.oneRight = true;
+        } else if (cellOverlapX && cellOverlapY)
+          {
+            if (!prox.thisBlock && !prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x1
+              {
+                auto cornerBounce = [&] {
+                  bounceUp();
+                  bounceLeft();
+                };
+
+                if (posLo.x == posLo.y && ball.vel.vx == ball.vel.vy)
+                  cornerBounce();
+                else if (posLo.y == 4)
+                  bounceUp();
+                else if (posLo.x == 0xc)
+                  bounceLeft();
+                else if (posLoOrig.y >= 4)
+                  bounceLeft();
+                else if (posLoOrig.x < 0xc)
+                  cornerBounce();
+                else
+                  bounceUp();
+
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && !prox.oneDown && prox.oneRight && !prox.oneDownRight) // 0x4
+              {
+                bounceLeft();
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && !prox.oneDownRight) // 0x2
+              {
+                bounceUp();
+                state.blockCollisSide = prox;
+            } else if (!prox.thisBlock && !prox.oneDown && prox.oneRight && prox.oneDownRight) // 0x5
+              {
+                bounceLeft();
+
+                if (posLo.y == 7)
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                } else
+                  {
+                    state.blockCollisSide.oneRight = true;
+                  }
+            } else if (!prox.thisBlock && prox.oneDown && !prox.oneRight && prox.oneDownRight) // 0x3
+              {
+                bounceUp();
+
+                if (posLo.x == 0xf)
+                  {
+                    state.blockCollisSide.oneDownRight = true;
+                } else
+                  {
+                    state.blockCollisSide.oneDown = true;
+                  }
+            } else if ((!prox.thisBlock && prox.oneDown && prox.oneRight && !prox.oneDownRight)    // 0x6
+                       || (!prox.thisBlock && prox.oneDown && prox.oneRight && prox.oneDownRight)) // 0x7
+              {
+                bounceUp();
+                bounceLeft();
+
+                // Select either oneRight or oneDown as the collision side. By default pick
+                // oneRight, but if it's gold and oneDown is not, switch to oneDown.
+                const auto index = cellY * GameConsts::BlocksPerRow + cellX;
+                if (BlkType(getBlock(state.blocks, index + 1)) == BlockType::Gold && BlkType(getBlock(state.blocks, index + GameConsts::BlocksPerRow)) != BlockType::Gold)
+                  {
+                    state.blockCollisSide.oneDown = true;
+                } else
+                  {
+                    state.blockCollisSide.oneRight = true;
+                  }
+            }
+        }
+      }
+  }
+
+  static inline void CheckBossCollis(GameState &state, Ball &ball)
+  {
+    if (ball.pos.y + 3 >= 0x28 && ball.pos.y < 0x88 && ball.pos.x + 3 >= 0x50 && ball.pos.x < 0x80)
+      {
+        state.bossHits++;
+
+        const auto doCollisY = [&] {
+          ball.yCollis = true;
+          if (ball.vSign.vy == 1 && ball.pos.y > 0x24)
+            {
+              ball.pos.y = 0x24;
+          } else if (ball.vSign.vy == -1 && ball.pos.y < 0x88)
+            {
+              ball.pos.y = 0x88;
+          }
+        };
+
+        const auto doCollisX = [&] {
+          ball.xCollis = true;
+          if (ball.vSign.vx == 1 && ball.pos.x > 0x4c)
+            {
+              ball.pos.x = 0x4c;
+          } else if (ball.vSign.vx == -1 && ball.pos.x < 0x80)
+            {
+              ball.pos.x = 0x80;
+          }
+        };
+
+        if (ball.vSign.vy == -1)
+          {
+            if (ball.pos.y + 4 > 0x88)
+              {
+                doCollisY();
+            } else
+              {
+                doCollisX();
+              }
+        } else
+          {
+            if (ball.pos.y < 0x28)
+              {
+                doCollisY();
+            } else
+              {
+                doCollisX();
+              }
+          }
+    }
+  }
+
+  static inline Proximity GetBlockProximity(GameState &state, const unsigned int cellX, const unsigned int cellY)
+  {
+    const auto index = cellY * GameConsts::BlocksPerRow + cellX;
+
+    const auto isBlockPresent = [&](unsigned int index) -> bool {
+      if (index >= GameConsts::BlockTableSize) { return false; }
+
+      return (getBlock(state.blocks, index) != Block(0));
+    };
+
+    return {isBlockPresent(index), isBlockPresent(index + 1), isBlockPresent(index + GameConsts::BlocksPerRow), isBlockPresent(index + GameConsts::BlocksPerRow + 1)};
+  }
+
+  static inline void CheckPaddleCollis(GameState &state, Ball &ball)
+  {
+    state.paddleCollis = false;
+    ball._paddleCollis = false;
+
+    // No collision if the ball is moving upwards.
+    if (ball.vSign.vy == -1) return;
+
+    const auto paddleLeftEdge    = state.paddleX;
+    const auto paddleLeftCenter  = paddleLeftEdge + 8;
+    const auto paddleRightCenter = paddleLeftCenter + 8;
+    const auto paddleRightEdge   = paddleRightCenter + 8; // TODO handle large paddle etc.
+
+    // No collision if the ball is too far above or below the paddle.
+    if (ball.pos.y + 4 < GameConsts::PaddleTop) return;
+    if (GameConsts::PaddleTop + 3 < ball.pos.y) return;
+
+    // No collision if the ball is too far from the paddle sides.
+    if (ball.pos.x + 4 < paddleLeftEdge) return;
+    if (ball.pos.x - 8 >= paddleRightEdge) return;
+
+    if (ball.pos.x < paddleLeftEdge)
+      {
+        ball.angle    = Angle::Shallow;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = -1;
+    } else if (ball.pos.x < paddleLeftCenter)
+      {
+        ball.angle    = Angle::Normal;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = -1;
+    } else if (ball.pos.x + 1 < paddleRightCenter)
+      {
+        ball.angle    = Angle::Steep;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = -1;
+    } else if (ball.pos.x < paddleRightEdge)
+      {
+        ball.angle    = Angle::Steep;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = 1;
+    } else if (ball.pos.x - paddleRightEdge < 5)
+      {
+        ball.angle    = Angle::Normal;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = 1;
+    } else if (ball.pos.x - paddleRightEdge < 8)
+      {
+        ball.angle    = Angle::Shallow;
+        ball.vSign.vy = -1;
+        ball.vSign.vx = 1;
+    } else
+      {
+        return;
+      }
+
+    state.speedReduction = 0;
+    ball.speedStage      = state.overallSpeedStage;
+    ball.speedStageM     = state.overallSpeedStageM;
+    ball.cycle           = 0;
+    state.paddleCollis   = true;
+
+    ball._paddleCollis = true;
+
+    // TODO other flags
+    // TODO sticky paddle
+  }
+
+  static inline void CheckEnemyCollis(GameState &state, Ball &ball)
+  {
+    // If there are any other collisions active (note that this is atypical),
+    // don't do enemy collisions.
+    if (ball.xCollis || ball.yCollis) return;
+
+    for (auto &&enemy : state.enemies)
+      {
+        if (enemy.active && !enemy.exiting && enemy.pos.y < 0xe0)
+          {
+            if (ball.pos.x >= enemy.pos.x && enemy.pos.x + 0xc >= ball.pos.x && ball.pos.y >= enemy.pos.y && enemy.pos.y + 0xc >= ball.pos.y)
+              {
+                state.pendingScore += 100;
+
+                enemy.active     = false;
+                enemy.destrFrame = 1;
+
+                // In the original code the ball collision flags get replaced wholesale
+                // instead of being combined with existing collision values, but since
+                // we only get here if there are no collisions at all, it doesn't matter
+                // in practice.
+
+                if (ball.vSign.vy == -1)
+                  {
+                    if (enemy.pos.y + 8 < ball.pos.y)
+                      ball.yCollis = true;
+                    else
+                      ball.xCollis = true;
+                } else
+                  {
+                    if (enemy.pos.y + 8 < ball.pos.y)
+                      ball.xCollis = true;
+                    else
+                      ball.yCollis = true;
+                  }
+            }
+        }
+      }
+  }
+
+  static inline void UpdateCeilCollisVSign(GameState &state, Ball &ball)
+  {
+    auto updateSigns = [&] {
+      if (ball.xCollis) ball.vSign.vx *= -1;
+      if (ball.yCollis) ball.vSign.vy *= -1;
+    };
+
+    // Don't change the speed stage on paddle bounces.
+    // Also no need to update signs since the paddle-bounce logic handles that itself.
+    if (state.paddleCollis) return;
+
+    if (state.ceilCollis)
+      {
+        const auto ceilSpeedStage = Data::CeilingBounceSpeedStage[state.level];
+        if (ceilSpeedStage > 0 && ceilSpeedStage > state.overallSpeedStage)
+          {
+            state.overallSpeedStage  = ceilSpeedStage;
+            state.overallSpeedStageM = ceilSpeedStage;
+            state.speedStageCounter  = Data::SpeedStageThresholds[state.overallSpeedStage];
+
+            // Reset the cycle timer and speed stage for all three balls.
+            for (auto &&ball : state.ball)
+              {
+                ball.cycle       = 0;
+                ball.speedStage  = ceilSpeedStage;
+                ball.speedStageM = ceilSpeedStage;
+              }
+        }
+
+        updateSigns();
+    } else if (ball.xCollis || ball.yCollis)
+      {
         ball.cycle = 0;
-        state.paddleCollis = true;
 
-        ball._paddleCollis = true;
+        updateSigns();
 
-        // TODO other flags
-        // TODO sticky paddle
-    }
+        if (ball.vSign.vy == -1)
+          {
+            if (ball.speedStage != state.overallSpeedStage)
+              {
+                ball.speedStage  = state.overallSpeedStage;
+                ball.speedStageM = state.overallSpeedStage;
+            } else if (ball.speedStageM != state.overallSpeedStageM)
+              {
+                ball.speedStageM = state.overallSpeedStageM;
+            } else
+              {
+                return;
+              }
 
-    static inline void CheckEnemyCollis(GameState& state, Ball& ball)
-    {
-        // If there are any other collisions active (note that this is atypical),
-        // don't do enemy collisions.
-        if (ball.xCollis || ball.yCollis) return;
-
-        for (auto&& enemy : state.enemies)
-        {
-            if (enemy.active && !enemy.exiting && enemy.pos.y < 0xe0)
-            {
-                if (ball.pos.x >= enemy.pos.x && enemy.pos.x + 0xc >= ball.pos.x
-                    && ball.pos.y >= enemy.pos.y && enemy.pos.y + 0xc >= ball.pos.y)
-                {
-                    state.pendingScore += 100;
-
-                    enemy.active = false;
-                    enemy.destrFrame = 1;
-
-                    // In the original code the ball collision flags get replaced wholesale
-                    // instead of being combined with existing collision values, but since
-                    // we only get here if there are no collisions at all, it doesn't matter
-                    // in practice.
-
-                    if (ball.vSign.vy == -1)
-                    {
-                        if (enemy.pos.y + 8 < ball.pos.y) ball.yCollis = true;
-                        else ball.xCollis = true;
-                    }
-                    else
-                    {
-                        if (enemy.pos.y + 8 < ball.pos.y) ball.xCollis = true;
-                        else ball.yCollis = true;
-                    }
-                }
-            }
+            // Switch to a new angle since the speed stage was changed.
+            if (ball.angle == Angle::Steep)
+              ball.angle = Angle::Normal;
+            else if (ball.angle == Angle::Normal)
+              ball.angle = Angle::Steep;
+            else if (ball.angle == Angle::Shallow)
+              ball.angle = Angle::Normal;
         }
     }
+  }
 
-    static inline void UpdateCeilCollisVSign(GameState& state, Ball& ball)
-    {
-        auto updateSigns = [&] {
-            if (ball.xCollis) ball.vSign.vx *= -1;
-            if (ball.yCollis) ball.vSign.vy *= -1;
-        };
+  static inline void HandleBlockCollis(GameState &state, Ball &ball)
+  {
+    const auto cellX = state.calculatedCell.x;
+    const auto cellY = state.calculatedCell.y;
 
-        // Don't change the speed stage on paddle bounces.
-        // Also no need to update signs since the paddle-bounce logic handles that itself.
-        if (state.paddleCollis) return;
+    if (state.blockCollisSide.thisBlock || state.blockCollisSide.oneRight || state.blockCollisSide.oneDown || state.blockCollisSide.oneDownRight)
+      {
+        // Update speed stage data.
+        state.speedStageCounter++;
+        if (state.speedStageCounter == 256) state.speedStageCounter = 0;
 
-        if (state.ceilCollis)
-        {
-            const auto ceilSpeedStage = Data::CeilingBounceSpeedStage[state.level];
-            if (ceilSpeedStage > 0 && ceilSpeedStage > state.overallSpeedStage)
-            {
-                state.overallSpeedStage = ceilSpeedStage;
-                state.overallSpeedStageM = ceilSpeedStage;
-                state.speedStageCounter = Data::SpeedStageThresholds[state.overallSpeedStage];
-
-                // Reset the cycle timer and speed stage for all three balls.
-                for (auto&& ball : state.ball)
-                {
-                    ball.cycle = 0;
-                    ball.speedStage = ceilSpeedStage;
-                    ball.speedStageM = ceilSpeedStage;
-                }
+        for (int i = 0; i < 16; i++)
+          {
+            if (state.speedStageCounter == Data::SpeedStageThresholds[i] && state.speedStageCounter > 0)
+              {
+                state.overallSpeedStageM = i;
+                if (state.overallSpeedStage != 0xf) { state.overallSpeedStage = i; }
+                break;
             }
+          }
 
-            updateSigns();
+        auto offset = 0;
+        if (state.blockCollisSide.thisBlock)
+          {
+            offset = 0;
+        } else if (state.blockCollisSide.oneRight)
+          {
+            offset = 1;
+        } else if (state.blockCollisSide.oneDown)
+          {
+            offset = GameConsts::BlocksPerRow;
+        } else if (state.blockCollisSide.oneDownRight)
+          {
+            offset = GameConsts::BlocksPerRow + 1;
         }
-        else if (ball.xCollis || ball.yCollis)
-        {
-            ball.cycle = 0;
 
-            updateSigns();
+        // Note that this is the pre-collision value, so it maps directly onto the new index.
+        const auto collisId = state.blockCollisCount;
 
-            if (ball.vSign.vy == -1)
-            {
-                if (ball.speedStage != state.overallSpeedStage)
-                {
-                    ball.speedStage = state.overallSpeedStage;
-                    ball.speedStageM = state.overallSpeedStage;
-                }
-                else if (ball.speedStageM != state.overallSpeedStageM)
-                {
-                    ball.speedStageM = state.overallSpeedStageM;
-                }
-                else
-                {
-                    return;
-                }
+        state.justHitBlock[collisId] = Block(0xf0);
 
-                // Switch to a new angle since the speed stage was changed.
-                if (ball.angle == Angle::Steep) ball.angle = Angle::Normal;
-                else if (ball.angle == Angle::Normal) ball.angle = Angle::Steep;
-                else if (ball.angle == Angle::Shallow) ball.angle = Angle::Normal;
+        const auto index = cellY * GameConsts::BlocksPerRow + cellX + offset;
+        if (index < GameConsts::BlockTableSize)
+          {
+            auto &block = getBlock(state.blocks, index);
+            if (BlkType(block) != BlockType::Gold)
+              {
+                block = static_cast<uint8_t>(BlkType(block)) | BlkPowerup(block) | (BlkHits(block) - 1);
+                if (BlkHits(block) == 0)
+                  {
+                    state.justHitBlock[collisId] = block;
+                    block                        = 0;
+                }
             }
+
+            state.justHitBlockCell[collisId] = {(uint8_t)(index % GameConsts::BlocksPerRow), (uint8_t)(index / GameConsts::BlocksPerRow)};
         }
+
+        state.justDestrBlock[collisId] = (state.justHitBlock[collisId] != Block(0xf0));
+
+        state.blockCollisCount++;
     }
+  }
 
-    static inline void HandleBlockCollis(GameState& state, Ball& ball)
-    {
-        const auto cellX = state.calculatedCell.x;
-        const auto cellY = state.calculatedCell.y;
+  static inline void CheckBallLost(GameState &state, Ball &ball) {}
 
-        if(state.blockCollisSide.thisBlock || state.blockCollisSide.oneRight
-        || state.blockCollisSide.oneDown || state.blockCollisSide.oneDownRight)
-        {
-            // Update speed stage data.
-            state.speedStageCounter++;
-            if (state.speedStageCounter == 256) state.speedStageCounter = 0;
-
-            for (int i = 0; i < 16; i++)
-            {
-                if (state.speedStageCounter == Data::SpeedStageThresholds[i]
-                    && state.speedStageCounter > 0)
-                {
-                    state.overallSpeedStageM = i;
-                    if (state.overallSpeedStage != 0xf)
-                    {
-                        state.overallSpeedStage = i;
-                    }
-                    break;
-                }
-            }
-
-            auto offset = 0;
-            if (state.blockCollisSide.thisBlock)
-            {
-                offset = 0;
-            }
-            else if (state.blockCollisSide.oneRight)
-            {
-                offset = 1;
-            }
-            else if (state.blockCollisSide.oneDown)
-            {
-                offset = GameConsts::BlocksPerRow;
-            }
-            else if (state.blockCollisSide.oneDownRight)
-            {
-                offset = GameConsts::BlocksPerRow + 1;
-            }
-
-            // Note that this is the pre-collision value, so it maps directly onto the new index.
-            const auto collisId = state.blockCollisCount;
-
-            state.justHitBlock[collisId] = Block(0xf0);
-
-            const auto index = cellY * GameConsts::BlocksPerRow + cellX + offset;
-            if (index < GameConsts::BlockTableSize)
-            {
-                auto& block = getBlock(state.blocks, index);
-                if (BlkType(block) != BlockType::Gold)
-                {
-                    block = static_cast<uint8_t>(BlkType(block)) | BlkPowerup(block) | (BlkHits(block) - 1);
-                    if (BlkHits(block) == 0)
-                    {
-                        state.justHitBlock[collisId] = block;
-                        block = 0;
-                    }
-                }
-
-                state.justHitBlockCell[collisId] = { (uint8_t)(index % GameConsts::BlocksPerRow), (uint8_t)(index / GameConsts::BlocksPerRow) };
-            }
-
-            state.justDestrBlock[collisId] = (state.justHitBlock[collisId] != Block(0xf0));
-
-            state.blockCollisCount++;
-        }
-    }
-
-    static inline void CheckBallLost(GameState& state, Ball& ball)
-    {
-
-    }
-
-    static inline void UpdateEnemyAnimTimers(GameState& state)
-    {
-        for (int i = 0; i < 3; i++)
-        {
-            auto& enemy = state.enemies[i];
-            if (enemy.active)
-            {
-                if (enemy.animTimer > 0) enemy.animTimer--;
-                else enemy.animTimer = (i == 0 ? 0xa : 6);
-            }
-        }
-    }
-
-    static inline void AdvanceEnemies(GameState& state)
-    {
-        for (auto&& enemy : state.enemies)
-        {
-            if (enemy.active)
-            {
-                if (enemy.moveTimer == 0)
-                {
-                    AdvanceOneEnemy(state, enemy);
-                }
-                else
-                {
-                    enemy.moveTimer--;
-                }
-            }
-        }
-    }
-
-    static inline void AdvanceOneEnemy(GameState& state, Enemy& enemy)
-    {
-        enemy.moveTimer = 3;
-
-        CheckNormalMovement(state, enemy);
-        CheckCirclingMovement(state, enemy);
-        CheckDownMovement(state, enemy);
-    }
-
-    static inline void CheckNormalMovement(GameState& state, Enemy& enemy)
-    {
-        if (enemy.movementType == MovementType::Normal)
-        {
-            if (enemy.exiting)
-            {
-                enemy.pos.y++;
-                if (enemy.pos.y >= 0x10)
-                {
-                    enemy.exiting = false;
-                    state.enemyGateState++;
-                }
-            }
+  static inline void UpdateEnemyAnimTimers(GameState &state)
+  {
+    for (int i = 0; i < 3; i++)
+      {
+        auto &enemy = state.enemies[i];
+        if (enemy.active)
+          {
+            if (enemy.animTimer > 0)
+              enemy.animTimer--;
             else
-            {
-                DoNormalEnemyMove(state, enemy);
-
-                if (enemy.pos.y >= 0xb0)
-                {
-                    enemy.movementType = MovementType::Downward;
-                }
-                else if(enemy.pos.y >= 0x60)
-                {
-                    const auto startIndex = GameConsts::BlocksPerRow * ((enemy.pos.y - GameConsts::FieldMinY) >> 3);
-                    for (auto idx = startIndex; idx < startIndex + 36; idx++)
-                    {
-                        if (idx < GameConsts::BlockTableSize && getBlock(state.blocks, idx) != Block(0))
-                        {
-                            return;
-                        }
-                    }
-
-                    enemy.movementType = MovementType::Circling;
-                    enemy.circleHalf = CircleHalf::Bottom;
-                    enemy.circleStage = 0;
-                    enemy.circleDir = (enemy.pos.x < 0x68 ? CircleDir::Counterclockwise : CircleDir::Clockwise);
-                }
-            }
+              enemy.animTimer = (i == 0 ? 0xa : 6);
         }
-    }
+      }
+  }
 
-    static inline void DoNormalEnemyMove(GameState& state, Enemy& enemy)
-    {
-        auto CheckEnemyCollisGoingDown = [&] {
-            auto collisIdx = CheckOtherEnemyCollis(state, enemy);
-            if (collisIdx < 3 && enemy.pos.y < state.enemies[collisIdx].pos.y)
-            {
-                state._enemyMysteryInput = state.mysteryInput;
+  static inline void AdvanceEnemies(GameState &state)
+  {
+    for (auto &&enemy : state.enemies)
+      {
+        if (enemy.active)
+          {
+            if (enemy.moveTimer == 0)
+              {
+                AdvanceOneEnemy(state, enemy);
+            } else
+              {
+                enemy.moveTimer--;
+              }
+        }
+      }
+  }
 
-                // carry state = 0 since the last operation (A < B) cleared the flag
-                auto rn = _RandNum(state, 0);
-                auto rnModFour = (rn % 4);
+  static inline void AdvanceOneEnemy(GameState &state, Enemy &enemy)
+  {
+    enemy.moveTimer = 3;
 
-                if (rnModFour == 0 || rnModFour == 2)
-                {
-                    enemy.moveDir = 4;
-                    enemy.descentTimer = 0x20;
-                }
-                else
-                {
-                    enemy.moveDir = rnModFour;
-                }
+    CheckNormalMovement(state, enemy);
+    CheckCirclingMovement(state, enemy);
+    CheckDownMovement(state, enemy);
+  }
 
-                state._justMovedEnemy = enemy._id;
-                state._enemyMoveOptions = 0b11111;
-            }
-        };
-
-        auto CheckEnemyCollisGoingRight = [&] {
-            auto collisIdx = CheckOtherEnemyCollis(state, enemy);
-            if (collisIdx < 3 && enemy.pos.x < state.enemies[collisIdx].pos.x)
-            {
-                enemy.moveDir = 2;
-            }
-        };
-
-        auto CheckEnemyCollisGoingUp = [&] {
-            auto collisIdx = CheckOtherEnemyCollis(state, enemy);
-            if (collisIdx < 3 && enemy.pos.y >= state.enemies[collisIdx].pos.y)
-            {
-                enemy.moveDir = 0;
-            }
-        };
-
-        auto CheckEnemyCollisGoingLeft = [&] {
-            auto collisIdx = CheckOtherEnemyCollis(state, enemy);
-            if (collisIdx < 3 && enemy.pos.x >= state.enemies[collisIdx].pos.x)
-            {
-                enemy.moveDir = 4;
-                enemy.descentTimer = 0x20;
-            }
-        };
-
-        // General flow: Given a movement direction, try to move in one of two directions
-        // (e.g. move dir 0 -> priority A = move down, priority B = move right). If neither
-        // movement is possible, figure out a new movement direction value. If either movement
-        // succeeds, do a secondary check to see if this enemy bumped into any others; if so,
-        // set a new movement direction.
-
-        if (enemy.moveDir == 0)
-        {
+  static inline void CheckNormalMovement(GameState &state, Enemy &enemy)
+  {
+    if (enemy.movementType == MovementType::Normal)
+      {
+        if (enemy.exiting)
+          {
             enemy.pos.y++;
-            if (CheckVertBlockCollis(state, enemy))
-            {
-                enemy.pos.y--;
-                enemy.pos.x++;
-                if (CheckHorizBlockCollis(state, enemy))
-                {
-                    enemy.pos.x--;
-
-                    if (enemy.pos.x == 0xb0)
-                    {
-                        enemy.moveDir = 2;
-                    }
-                    else
-                    {
-                        state._enemyMysteryInput = state.mysteryInput;
-
-                        // Set the carry state based on the previous comparison.
-                        const auto carryBit = (enemy.pos.x >= 0xb0);
-
-                        auto rn = _RandNum(state, carryBit);
-                        enemy.moveDir = (rn % 2 == 0 ? 2 : 1);
-
-                        state._justMovedEnemy = enemy._id;
-                        state._enemyMoveOptions = 0b00110;
-                    }
-                }
-                else
-                {
-                    CheckEnemyCollisGoingRight();
-                }
+            if (enemy.pos.y >= 0x10)
+              {
+                enemy.exiting = false;
+                state.enemyGateState++;
             }
-            else
-            {
-                CheckEnemyCollisGoingDown();
-            }
-        }
-        else if (enemy.moveDir == 1)
-        {
-            enemy.pos.x++;
-            if (CheckHorizBlockCollis(state, enemy))
-            {
-                enemy.pos.x--;
-                enemy.pos.y--;
-                if (CheckVertBlockCollis(state, enemy))
-                {
-                    enemy.pos.y++;
-                    enemy.moveDir = 2;
-                }
-                else
-                {
-                    CheckEnemyCollisGoingUp();
-                }
-            }
-            else
-            {
-                enemy.moveDir = 0;
-                CheckEnemyCollisGoingRight();
-            }
-        }
-        else if (enemy.moveDir == 2)
-        {
-            enemy.pos.y++;
-            if (CheckVertBlockCollis(state, enemy))
-            {
-                enemy.pos.y--;
-                enemy.pos.x--;
-                if (CheckHorizBlockCollis(state, enemy))
-                {
-                    enemy.pos.x++;
-                    if (enemy.pos.x == 0x10)
-                    {
-                        enemy.moveDir = 3;
-                    }
-                    else
-                    {
-                        state._enemyMysteryInput = state.mysteryInput;
-
-                        // carry state = 1 since last comparison (x == 0x10) set the flag
-                        auto rn = _RandNum(state, 1);
-                        enemy.moveDir = ((rn % 2 == 0) ? 3 : 0);
-
-                        state._justMovedEnemy = enemy._id;
-                        state._enemyMoveOptions = 0b01001;
-                    }
-                }
-                else
-                {
-                    CheckEnemyCollisGoingLeft();
-                }
-            }
-            else
-            {
-                CheckEnemyCollisGoingDown();
-            }
-        }
-        else if (enemy.moveDir == 3)
-        {
-            enemy.pos.x--;
-            if (CheckHorizBlockCollis(state, enemy))
-            {
-                enemy.pos.x++;
-                enemy.pos.y--;
-                if (CheckVertBlockCollis(state, enemy))
-                {
-                    enemy.pos.y++;
-                    enemy.moveDir = 0;
-                }
-                else
-                {
-                    CheckEnemyCollisGoingUp();
-                }
-            }
-            else
-            {
-                enemy.moveDir = 2;
-                CheckEnemyCollisGoingLeft();
-            }
-        }
-        else if (enemy.moveDir == 4)
-        {
-            if (enemy.descentTimer == 0)
-            {
-                enemy.moveDir = 0;
-            }
-            else
-            {
-                enemy.descentTimer--;
-                enemy.pos.y--;
-                if (CheckVertBlockCollis(state, enemy))
-                {
-                    enemy.pos.y++;
-                    enemy.moveDir = 0;
-                    enemy.descentTimer = 0;
-                }
-                else
-                {
-                    CheckEnemyCollisGoingUp();
-                }
-            }
-        }
-    }
-
-    static inline void CheckCirclingMovement(GameState& state, Enemy& enemy)
-    {
-        if (enemy.movementType == MovementType::Circling)
-        {
-            auto deltaY = Data::CircleMovementTable[enemy.circleStage];
-            if (deltaY == 0x80)
-            {
-                enemy.circleStage -= 2;
-                enemy.circleHalf = (enemy.circleHalf == CircleHalf::Bottom ? CircleHalf::Top : CircleHalf::Bottom);
-            }
-
-            deltaY = Data::CircleMovementTable[enemy.circleStage];
-            enemy.pos.y += deltaY;
-
-            auto deltaX = Data::CircleMovementTable[enemy.circleStage + 1];
-
-            if ((enemy.circleHalf == CircleHalf::Top && enemy.circleDir == CircleDir::Counterclockwise)
-                || (enemy.circleHalf == CircleHalf::Bottom && enemy.circleDir == CircleDir::Clockwise))
-            {
-                enemy.pos.x += deltaX;
-            }
-            else
-            {
-                deltaX *= -1;
-
-                // If 0, set to 1. This is a side-effect of the two's-complement negation code,
-                // which sets the correct value but neglects to clear the carry bit. If the value
-                // was 0, flipping the bits and adding one produces a carry, which is implicitly
-                // applied to the subsequent position update.
-                if (deltaX == 0) deltaX = 1;
-
-                enemy.pos.x += deltaX;
-            }
-            
-            if (enemy.circleHalf == CircleHalf::Bottom)
-            {
-                enemy.circleStage += 2;
-            }
-            else
-            {
-                enemy.circleStage -= 2;
-                if (enemy.circleStage == 0)
-                {
-                    enemy.circleHalf = CircleHalf::Bottom;
-                }
-            }
-
-            if (enemy.pos.x < 0x11)
-            {
-                enemy.pos.x = 0x10;
-
-                if (!(enemy.circleDir == CircleDir::Counterclockwise && enemy.circleHalf == CircleHalf::Bottom))
-                {
-                    enemy.circleStage = 0;
-                    enemy.circleHalf = CircleHalf::Bottom;
-                    enemy.circleDir = CircleDir::Counterclockwise;
-                }
-            }
-            else if (enemy.pos.x >= 0xb0)
-            {
-                enemy.pos.x = 0xb0;
-
-                if (!(enemy.circleDir == CircleDir::Clockwise && enemy.circleHalf == CircleHalf::Bottom))
-                {
-                    enemy.circleStage = 0;
-                    enemy.circleHalf = CircleHalf::Bottom;
-                    enemy.circleDir = CircleDir::Clockwise;
-                }
-            }
+        } else
+          {
+            DoNormalEnemyMove(state, enemy);
 
             if (enemy.pos.y >= 0xb0)
-            {
+              {
                 enemy.movementType = MovementType::Downward;
-            }
-        }
-    }
+            } else if (enemy.pos.y >= 0x60)
+              {
+                const auto startIndex = GameConsts::BlocksPerRow * ((enemy.pos.y - GameConsts::FieldMinY) >> 3);
+                for (auto idx = startIndex; idx < startIndex + 36; idx++)
+                  {
+                    if (idx < GameConsts::BlockTableSize && getBlock(state.blocks, idx) != Block(0)) { return; }
+                  }
 
-    static inline void CheckDownMovement(GameState& state, Enemy& enemy)
-    {
-        if (enemy.movementType == MovementType::Downward)
+                enemy.movementType = MovementType::Circling;
+                enemy.circleHalf   = CircleHalf::Bottom;
+                enemy.circleStage  = 0;
+                enemy.circleDir    = (enemy.pos.x < 0x68 ? CircleDir::Counterclockwise : CircleDir::Clockwise);
+            }
+          }
+    }
+  }
+
+  static inline void DoNormalEnemyMove(GameState &state, Enemy &enemy)
+  {
+    auto CheckEnemyCollisGoingDown = [&] {
+      auto collisIdx = CheckOtherEnemyCollis(state, enemy);
+      if (collisIdx < 3 && enemy.pos.y < state.enemies[collisIdx].pos.y)
         {
-            enemy.pos.y++;
-            if (enemy.pos.y >= 0xf0)
+          state._enemyMysteryInput = state.mysteryInput;
+
+          // carry state = 0 since the last operation (A < B) cleared the flag
+          auto rn        = _RandNum(state, 0);
+          auto rnModFour = (rn % 4);
+
+          if (rnModFour == 0 || rnModFour == 2)
             {
-                enemy.active = false;
-                enemy.movementType = MovementType::Normal;
+              enemy.moveDir      = 4;
+              enemy.descentTimer = 0x20;
+          } else
+            {
+              enemy.moveDir = rnModFour;
+            }
+
+          state._justMovedEnemy   = enemy._id;
+          state._enemyMoveOptions = 0b11111;
+      }
+    };
+
+    auto CheckEnemyCollisGoingRight = [&] {
+      auto collisIdx = CheckOtherEnemyCollis(state, enemy);
+      if (collisIdx < 3 && enemy.pos.x < state.enemies[collisIdx].pos.x) { enemy.moveDir = 2; }
+    };
+
+    auto CheckEnemyCollisGoingUp = [&] {
+      auto collisIdx = CheckOtherEnemyCollis(state, enemy);
+      if (collisIdx < 3 && enemy.pos.y >= state.enemies[collisIdx].pos.y) { enemy.moveDir = 0; }
+    };
+
+    auto CheckEnemyCollisGoingLeft = [&] {
+      auto collisIdx = CheckOtherEnemyCollis(state, enemy);
+      if (collisIdx < 3 && enemy.pos.x >= state.enemies[collisIdx].pos.x)
+        {
+          enemy.moveDir      = 4;
+          enemy.descentTimer = 0x20;
+      }
+    };
+
+    // General flow: Given a movement direction, try to move in one of two directions
+    // (e.g. move dir 0 -> priority A = move down, priority B = move right). If neither
+    // movement is possible, figure out a new movement direction value. If either movement
+    // succeeds, do a secondary check to see if this enemy bumped into any others; if so,
+    // set a new movement direction.
+
+    if (enemy.moveDir == 0)
+      {
+        enemy.pos.y++;
+        if (CheckVertBlockCollis(state, enemy))
+          {
+            enemy.pos.y--;
+            enemy.pos.x++;
+            if (CheckHorizBlockCollis(state, enemy))
+              {
+                enemy.pos.x--;
+
+                if (enemy.pos.x == 0xb0)
+                  {
+                    enemy.moveDir = 2;
+                } else
+                  {
+                    state._enemyMysteryInput = state.mysteryInput;
+
+                    // Set the carry state based on the previous comparison.
+                    const auto carryBit = (enemy.pos.x >= 0xb0);
+
+                    auto rn       = _RandNum(state, carryBit);
+                    enemy.moveDir = (rn % 2 == 0 ? 2 : 1);
+
+                    state._justMovedEnemy   = enemy._id;
+                    state._enemyMoveOptions = 0b00110;
+                  }
+            } else
+              {
+                CheckEnemyCollisGoingRight();
+              }
+        } else
+          {
+            CheckEnemyCollisGoingDown();
+          }
+    } else if (enemy.moveDir == 1)
+      {
+        enemy.pos.x++;
+        if (CheckHorizBlockCollis(state, enemy))
+          {
+            enemy.pos.x--;
+            enemy.pos.y--;
+            if (CheckVertBlockCollis(state, enemy))
+              {
+                enemy.pos.y++;
+                enemy.moveDir = 2;
+            } else
+              {
+                CheckEnemyCollisGoingUp();
+              }
+        } else
+          {
+            enemy.moveDir = 0;
+            CheckEnemyCollisGoingRight();
+          }
+    } else if (enemy.moveDir == 2)
+      {
+        enemy.pos.y++;
+        if (CheckVertBlockCollis(state, enemy))
+          {
+            enemy.pos.y--;
+            enemy.pos.x--;
+            if (CheckHorizBlockCollis(state, enemy))
+              {
+                enemy.pos.x++;
+                if (enemy.pos.x == 0x10)
+                  {
+                    enemy.moveDir = 3;
+                } else
+                  {
+                    state._enemyMysteryInput = state.mysteryInput;
+
+                    // carry state = 1 since last comparison (x == 0x10) set the flag
+                    auto rn       = _RandNum(state, 1);
+                    enemy.moveDir = ((rn % 2 == 0) ? 3 : 0);
+
+                    state._justMovedEnemy   = enemy._id;
+                    state._enemyMoveOptions = 0b01001;
+                  }
+            } else
+              {
+                CheckEnemyCollisGoingLeft();
+              }
+        } else
+          {
+            CheckEnemyCollisGoingDown();
+          }
+    } else if (enemy.moveDir == 3)
+      {
+        enemy.pos.x--;
+        if (CheckHorizBlockCollis(state, enemy))
+          {
+            enemy.pos.x++;
+            enemy.pos.y--;
+            if (CheckVertBlockCollis(state, enemy))
+              {
+                enemy.pos.y++;
+                enemy.moveDir = 0;
+            } else
+              {
+                CheckEnemyCollisGoingUp();
+              }
+        } else
+          {
+            enemy.moveDir = 2;
+            CheckEnemyCollisGoingLeft();
+          }
+    } else if (enemy.moveDir == 4)
+      {
+        if (enemy.descentTimer == 0)
+          {
+            enemy.moveDir = 0;
+        } else
+          {
+            enemy.descentTimer--;
+            enemy.pos.y--;
+            if (CheckVertBlockCollis(state, enemy))
+              {
+                enemy.pos.y++;
+                enemy.moveDir      = 0;
+                enemy.descentTimer = 0;
+            } else
+              {
+                CheckEnemyCollisGoingUp();
+              }
+          }
+    }
+  }
+
+  static inline void CheckCirclingMovement(GameState &state, Enemy &enemy)
+  {
+    if (enemy.movementType == MovementType::Circling)
+      {
+        auto deltaY = Data::CircleMovementTable[enemy.circleStage];
+        if (deltaY == 0x80)
+          {
+            enemy.circleStage -= 2;
+            enemy.circleHalf = (enemy.circleHalf == CircleHalf::Bottom ? CircleHalf::Top : CircleHalf::Bottom);
+        }
+
+        deltaY = Data::CircleMovementTable[enemy.circleStage];
+        enemy.pos.y += deltaY;
+
+        auto deltaX = Data::CircleMovementTable[enemy.circleStage + 1];
+
+        if ((enemy.circleHalf == CircleHalf::Top && enemy.circleDir == CircleDir::Counterclockwise) ||
+            (enemy.circleHalf == CircleHalf::Bottom && enemy.circleDir == CircleDir::Clockwise))
+          {
+            enemy.pos.x += deltaX;
+        } else
+          {
+            deltaX *= -1;
+
+            // If 0, set to 1. This is a side-effect of the two's-complement negation code,
+            // which sets the correct value but neglects to clear the carry bit. If the value
+            // was 0, flipping the bits and adding one produces a carry, which is implicitly
+            // applied to the subsequent position update.
+            if (deltaX == 0) deltaX = 1;
+
+            enemy.pos.x += deltaX;
+          }
+
+        if (enemy.circleHalf == CircleHalf::Bottom)
+          {
+            enemy.circleStage += 2;
+        } else
+          {
+            enemy.circleStage -= 2;
+            if (enemy.circleStage == 0) { enemy.circleHalf = CircleHalf::Bottom; }
+          }
+
+        if (enemy.pos.x < 0x11)
+          {
+            enemy.pos.x = 0x10;
+
+            if (!(enemy.circleDir == CircleDir::Counterclockwise && enemy.circleHalf == CircleHalf::Bottom))
+              {
+                enemy.circleStage = 0;
+                enemy.circleHalf  = CircleHalf::Bottom;
+                enemy.circleDir   = CircleDir::Counterclockwise;
+            }
+        } else if (enemy.pos.x >= 0xb0)
+          {
+            enemy.pos.x = 0xb0;
+
+            if (!(enemy.circleDir == CircleDir::Clockwise && enemy.circleHalf == CircleHalf::Bottom))
+              {
+                enemy.circleStage = 0;
+                enemy.circleHalf  = CircleHalf::Bottom;
+                enemy.circleDir   = CircleDir::Clockwise;
             }
         }
+
+        if (enemy.pos.y >= 0xb0) { enemy.movementType = MovementType::Downward; }
+    }
+  }
+
+  static inline void CheckDownMovement(GameState &state, Enemy &enemy)
+  {
+    if (enemy.movementType == MovementType::Downward)
+      {
+        enemy.pos.y++;
+        if (enemy.pos.y >= 0xf0)
+          {
+            enemy.active       = false;
+            enemy.movementType = MovementType::Normal;
+        }
+    }
+  }
+
+  static inline bool CheckVertBlockCollis(GameState &state, Enemy &enemy)
+  {
+    if (enemy.pos.y == 0xf) return true;
+
+    auto indexOffset = 0;
+    if ((enemy.pos.y & 0x7) != 7)
+      {
+        indexOffset = 0x16;
+        if ((enemy.pos.y & 7) != 1) return false;
     }
 
-    static inline bool CheckVertBlockCollis(GameState& state, Enemy& enemy)
-    {
-        if (enemy.pos.y == 0xf) return true;
+    state.mysteryInput = indexOffset;
+    auto index         = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
+    index += indexOffset;
 
-        auto indexOffset = 0;
-        if ((enemy.pos.y & 0x7) != 7)
-        {
-            indexOffset = 0x16;
-            if ((enemy.pos.y & 7) != 1) return false;
-        }
-        
-        state.mysteryInput = indexOffset;
-        auto index = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
-        index += indexOffset;
-
-        if (getBlock(state.blocks, index) != Block(0))
-        {
-            return true;
-        }
+    if (getBlock(state.blocks, index) != Block(0))
+      {
+        return true;
+    } else
+      {
+        if ((enemy.pos.x & 0xf) == 0)
+          return false;
+        else if (getBlock(state.blocks, index + 1) == Block(0))
+          return false;
         else
-        {
-            if ((enemy.pos.x & 0xf) == 0) return false;
-            else if (getBlock(state.blocks, index + 1) == Block(0)) return false;
-            else return true;
-        }
+          return true;
+      }
+  }
+
+  static inline bool CheckHorizBlockCollis(GameState &state, Enemy &enemy)
+  {
+    if (enemy.pos.x < 0x10) return true;
+    if (enemy.pos.x >= 0xb1) return true;
+
+    auto indexOffset = 0;
+    if ((enemy.pos.x & 0xf) != 0xf)
+      {
+        indexOffset = 1;
+        if ((enemy.pos.x & 0xf) != 1) return false;
     }
 
-    static inline bool CheckHorizBlockCollis(GameState& state, Enemy& enemy)
-    {
-        if (enemy.pos.x < 0x10) return true;
-        if (enemy.pos.x >= 0xb1) return true;
+    state.mysteryInput = indexOffset;
+    auto index         = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
+    index += indexOffset;
 
-        auto indexOffset = 0;
-        if ((enemy.pos.x & 0xf) != 0xf)
-        {
-            indexOffset = 1;
-            if ((enemy.pos.x & 0xf) != 1) return false;
-        }
+    if (getBlock(state.blocks, index) != Block(0))
+      {
+        return true;
+    } else if (getBlock(state.blocks, index + GameConsts::BlocksPerRow) != Block(0))
+      {
+        return true;
+    } else if ((enemy.pos.y & 0x7) == 0)
+      {
+        return false;
+    } else if (getBlock(state.blocks, index + 2 * GameConsts::BlocksPerRow) == Block(0))
+      {
+        return false;
+    } else
+      {
+        return true;
+      }
+  }
 
-        state.mysteryInput = indexOffset;
-        auto index = ((enemy.pos.y - 0x10) >> 3) * GameConsts::BlocksPerRow + ((enemy.pos.x - 0x10) >> 4);
-        index += indexOffset;
+  static inline unsigned int CheckOtherEnemyCollis(GameState &state, Enemy &enemy)
+  {
+    for (auto &&otherEnemy : state.enemies)
+      {
+        state.mysteryInput = otherEnemy._id;
 
-        if (getBlock(state.blocks, index) != Block(0))
-        {
-            return true;
-        }
-        else if (getBlock(state.blocks, index + GameConsts::BlocksPerRow) != Block(0))
-        {
-            return true;
-        }
-        else if ((enemy.pos.y & 0x7) == 0)
-        {
-            return false;
-        }
-        else if (getBlock(state.blocks, index + 2 * GameConsts::BlocksPerRow) == Block(0))
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    static inline unsigned int CheckOtherEnemyCollis(GameState& state, Enemy& enemy)
-    {
-        for (auto&& otherEnemy : state.enemies)
-        {
-            state.mysteryInput = otherEnemy._id;
-
-            if (enemy._id != otherEnemy._id && otherEnemy.active)
-            {
-                if (otherEnemy.pos.x + 0xf >= enemy.pos.x
-                    && enemy.pos.x + 0xf >= otherEnemy.pos.x
-                    && otherEnemy.pos.y + 0xf >= enemy.pos.y
-                    && enemy.pos.y + 0xf >= otherEnemy.pos.y)
-                {
-                    return otherEnemy._id;
-                }
+        if (enemy._id != otherEnemy._id && otherEnemy.active)
+          {
+            if (otherEnemy.pos.x + 0xf >= enemy.pos.x && enemy.pos.x + 0xf >= otherEnemy.pos.x && otherEnemy.pos.y + 0xf >= enemy.pos.y && enemy.pos.y + 0xf >= otherEnemy.pos.y)
+              {
+                return otherEnemy._id;
             }
         }
+      }
 
-        return 0xff;
-    }
+    return 0xff;
+  }
 
-    static inline void UpdateEnemyStatus(GameState& state)
-    {
-        if (state.enemyGateState == 5)
-        {
-            // SpawnEnemy
-            state.enemies[state.enemySpawnIndex].active = true;
-            state.enemies[state.enemySpawnIndex].exiting = true;
-            state.enemies[state.enemySpawnIndex].movementType = MovementType::Normal;
-            state.enemies[state.enemySpawnIndex].moveTimer = 3;
-            state.enemies[state.enemySpawnIndex].animTimer = 6;
-            state.enemies[state.enemySpawnIndex].pos.y = 0;
-            state.enemies[state.enemySpawnIndex].pos.x = (state.enemyGateIndex == 0 ? 0x34 : 0x8c);
-            state.enemies[state.enemySpawnIndex].moveDir = (state.enemyGateIndex == 0 ? 2 : 0);
+  static inline void UpdateEnemyStatus(GameState &state)
+  {
+    if (state.enemyGateState == 5)
+      {
+        // SpawnEnemy
+        state.enemies[state.enemySpawnIndex].active       = true;
+        state.enemies[state.enemySpawnIndex].exiting      = true;
+        state.enemies[state.enemySpawnIndex].movementType = MovementType::Normal;
+        state.enemies[state.enemySpawnIndex].moveTimer    = 3;
+        state.enemies[state.enemySpawnIndex].animTimer    = 6;
+        state.enemies[state.enemySpawnIndex].pos.y        = 0;
+        state.enemies[state.enemySpawnIndex].pos.x        = (state.enemyGateIndex == 0 ? 0x34 : 0x8c);
+        state.enemies[state.enemySpawnIndex].moveDir      = (state.enemyGateIndex == 0 ? 2 : 0);
 
-            state.enemyGateState++;
-        }
-        else if (state.enemyGateState == 0) // stand-in for EnemyGateState == 0
-        {
-            for (auto i = 0; i < 3; i++)
-            {
-                if (!state.enemies[i].active && (state.enemies[i].destrFrame == 0) && state.enemySpawnTimers[i] == 0)
-                {
-                    // BeginSpawnEnemy
-                    state.enemySpawnIndex = i;
-                    state.enemyGateState = 1;
-                    state.enemyGateIndex = (state.paddleX >= 0x68 ? 1 : 0);
-                    break;
-                }
+        state.enemyGateState++;
+    } else if (state.enemyGateState == 0) // stand-in for EnemyGateState == 0
+      {
+        for (auto i = 0; i < 3; i++)
+          {
+            if (!state.enemies[i].active && (state.enemies[i].destrFrame == 0) && state.enemySpawnTimers[i] == 0)
+              {
+                // BeginSpawnEnemy
+                state.enemySpawnIndex = i;
+                state.enemyGateState  = 1;
+                state.enemyGateIndex  = (state.paddleX >= 0x68 ? 1 : 0);
+                break;
             }
-        }
+          }
     }
+  }
 
-    static inline void HandleEnemyDestruction(GameState& state)
-    {
-        for (auto&& enemy : state.enemies)
-        {
-            if (enemy.destrFrame > 0)
-            {
-                if (enemy.animTimer > 0)
-                {
-                    enemy.animTimer--;
+  static inline void HandleEnemyDestruction(GameState &state)
+  {
+    for (auto &&enemy : state.enemies)
+      {
+        if (enemy.destrFrame > 0)
+          {
+            if (enemy.animTimer > 0)
+              {
+                enemy.animTimer--;
+            } else
+              {
+                enemy.animTimer = 6;
+                enemy.destrFrame++;
+
+                if (enemy.destrFrame > 5)
+                  {
+                    enemy.pos.y      = 0xf0;
+                    enemy.destrFrame = 0;
                 }
-                else
-                {
-                    enemy.animTimer = 6;
-                    enemy.destrFrame++;
-
-                    if (enemy.destrFrame > 5)
-                    {
-                        enemy.pos.y = 0xf0;
-                        enemy.destrFrame = 0;
-                    }
-                }
-            }
+              }
         }
-    }
+      }
+  }
 
-    static inline void UpdateEnemySprites(GameState& state)
-    {
-        // Lots of other stuff happens here in the game code, but the important bit
-        // for the simulation is the state check and possible position update.
-        for (auto&& enemy : state.enemies)
-        {
-            if (!enemy.active && enemy.destrFrame == 0)
-            {
-                enemy.pos.y = 0xf0;
-            }
-        }
-    }
+  static inline void UpdateEnemySprites(GameState &state)
+  {
+    // Lots of other stuff happens here in the game code, but the important bit
+    // for the simulation is the state check and possible position update.
+    for (auto &&enemy : state.enemies)
+      {
+        if (!enemy.active && enemy.destrFrame == 0) { enemy.pos.y = 0xf0; }
+      }
+  }
 };
