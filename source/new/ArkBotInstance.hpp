@@ -152,7 +152,7 @@ class EmuInstance : public EmuInstanceBase
      jaffarCommon::logger::log("[] Pending Score:   %u\n", _arkState.pendingScore);
      jaffarCommon::logger::log("[] Block State:\n");
 
-     for (uint8_t i = 0; i < GameConsts::BlocksPerCol-3; i++)
+     for (uint8_t i = 0; i < GameConsts::BlocksPerCol-2; i++)
      {
       jaffarCommon::logger::log("[] ");
       for (uint8_t j = 0; j < GameConsts::BlocksPerRow; j++)

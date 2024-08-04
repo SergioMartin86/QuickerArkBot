@@ -3,6 +3,7 @@
 #include <GameConsts.h>
 #include <cstdint>
 #include <functional>
+#include <set>
 
 struct Point
 {
@@ -124,7 +125,7 @@ struct GameState
   Ball ball[3];
 
   // Block data.
-  Block     blocks[GameConsts::BlockTableSize - 33];
+  Block     blocks[GameConsts::BlockTableSize - 22];
   uint8_t   totalBlocks         = 0x77;
   uint8_t   currentBlocks       = 0x77;
   uint8_t   blockCollisCount    = 0x77;
@@ -170,4 +171,9 @@ struct GameState
   uint8_t _enemyMysteryInput     = 0x77;
   uint8_t _enemyMoveOptions      = 0;
   int8_t  _queueEnemyDestruction = -1;
+  
+  uint8_t _wasRNGUsed = 0;
+  uint8_t _enemyGateActive = 0;
+
+  std::set<uint8_t> _RNGManipulationPaddleXCandidates;
 };

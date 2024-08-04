@@ -18,9 +18,8 @@
 static thread_local Block falseBlock = 0;
 inline Block             &getBlock(Block *blocks, uint8_t index)
 {
-  if (index < 11) return falseBlock;
   if (index >= 220 - 22) return falseBlock;
-  return blocks[index - 11];
+  return blocks[index];
 }
 
 class GameOp
@@ -119,7 +118,10 @@ class GameOp
     state._justMovedEnemy    = -1;
     state._enemyMoveOptions  = 0;
     state._enemyMysteryInput = 0x77;
-
+    state._wasRNGUsed = 0;
+    state._enemyGateActive = 0;
+    state._RNGManipulationPaddleXCandidates.clear();
+    
     RefreshMiscState(state);
     ProcessInput(state, potPosX, fire);
     UpdateScore(state);
@@ -157,8 +159,8 @@ class GameOp
         state.currentBlocks = Data::LevelBlockCount[level];
         state.totalBlocks   = state.currentBlocks;
 
-        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) state.blocks[i] = 0;
-        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 33; i++) { state.blocks[i] = Data::LevelData[level][i + 11]; }
+        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 22; i++) state.blocks[i] = 0;
+        for (unsigned int i = 0; i < GameConsts::BlockTableSize - 22; i++) { state.blocks[i] = Data::LevelData[level][i]; }
       }
   }
 
@@ -191,6 +193,8 @@ class GameOp
 
   static inline unsigned int _RandNum(GameState &state, const unsigned int inputCarry)
   {
+    state._wasRNGUsed = 1;
+    
     const auto scoreDigit4 = (state.score % 1000) / 100;
     const auto scoreDigit5 = (state.score % 100) / 10;
 
@@ -2046,6 +2050,7 @@ class GameOp
                 // BeginSpawnEnemy
                 state.enemySpawnIndex = i;
                 state.enemyGateState  = 1;
+                state._enemyGateActive = 1;
                 state.enemyGateIndex  = (state.paddleX >= 0x68 ? 1 : 0);
                 break;
             }
