@@ -15,6 +15,9 @@
 #include <vector>
 #include <initializer_list>
 
+thread_local std::set<uint8_t> _RNfGManipulationPaddleXCandidates;
+bool _detectRNGManipulationInputs = false;
+
 static thread_local Block falseBlock = 0;
 inline Block             &getBlock(Block *blocks, uint8_t index)
 {
@@ -118,9 +121,13 @@ class GameOp
     state._justMovedEnemy    = -1;
     state._enemyMoveOptions  = 0;
     state._enemyMysteryInput = 0x77;
-    state._wasRNGUsed = 0;
+    state._wasRNGUsed1 = 0;
+    state._wasRNGUsed2 = 0;
+    state._wasRNGUsed3 = 0;
+    state._wasRNGUsed4 = 0;
     state._enemyGateActive = 0;
-    state._RNGManipulationPaddleXCandidates.clear();
+
+    if (_detectRNGManipulationInputs == true) _RNfGManipulationPaddleXCandidates.clear();
     
     RefreshMiscState(state);
     ProcessInput(state, potPosX, fire);
@@ -191,22 +198,20 @@ class GameOp
     state.ball[0].pos.x = paddleRightCenter;
   }
 
-  static inline unsigned int _RandNum(GameState &state, const unsigned int inputCarry)
+  static inline unsigned int _RandNum(const unsigned int inputCarry, const int score, const uint8_t paddleX, const Point ball0Pos, uint16_t& mysteryInput)
   {
-    state._wasRNGUsed = 1;
-    
-    const auto scoreDigit4 = (state.score % 1000) / 100;
-    const auto scoreDigit5 = (state.score % 100) / 10;
+    const auto scoreDigit4 = (score % 1000) / 100;
+    const auto scoreDigit5 = (score % 100) / 10;
 
     // Mystery input values, always seem to be constant.
     const auto mystery0379 = 0;
     const auto mystery037a = 0;
 
     // Other values.
-    const auto paddleLeftEdge   = state.paddleX;
+    const auto paddleLeftEdge   = paddleX;
     const auto paddleLeftCenter = paddleLeftEdge + 8;
 
-    auto rng   = state.mysteryInput;
+    auto rng   = mysteryInput;
     auto carry = inputCarry;
 
     const auto adc = [&rng, &carry](unsigned int val) {
@@ -233,7 +238,7 @@ class GameOp
 
     rng = Data::RngTable[rng % 16];
 
-    adc(state.mysteryInput);
+    adc(mysteryInput);
     adc(scoreDigit4);
     adc(scoreDigit5);
     rol();
@@ -245,12 +250,12 @@ class GameOp
     rol();
     rol();
     rol();
-    adc(state.ball[0].pos.y);
-    adc(state.ball[0].pos.x);
+    adc(ball0Pos.y);
+    adc(ball0Pos.x);
     ror();
     ror();
 
-    state.mysteryInput += 3;
+    mysteryInput += 3;
 
     return rng;
   }
@@ -421,7 +426,25 @@ class GameOp
       {
         // This always seems to be constant...
         state.mysteryInput = 1;
-        const auto rn      = _RandNum(state, inputCarry);
+        const auto rn      = _RandNum(inputCarry, state.score, state.paddleX, state.ball[0].pos, state.mysteryInput);
+        state._wasRNGUsed1 = 1;
+
+        // Run randnum to see which paddle posx that results in multiball
+        if (_detectRNGManipulationInputs == true)
+        {
+          for (size_t i = 18; i < 160; i++) 
+          {
+            uint16_t mysteryInputTest = 1;
+            int inputCarryTest = 0;
+            const auto rngTest  = _RandNum(inputCarryTest, state.score, i, state.ball[0].pos, mysteryInputTest);
+            const auto rnLoBits = (rngTest & 7);
+            if (static_cast<Powerup>(rnLoBits) == Powerup::Multiball || rnLoBits == 6) 
+            {
+              _RNfGManipulationPaddleXCandidates.insert(i);
+              break;
+            }
+          }
+        }
 
         auto spawnedRarePowerup = false;
         for (int x = 0; x < 6; x++)
@@ -1690,10 +1713,47 @@ class GameOp
       auto collisIdx = CheckOtherEnemyCollis(state, enemy);
       if (collisIdx < 3 && enemy.pos.y < state.enemies[collisIdx].pos.y)
         {
+
+          // Run randnum to see which paddle posx that results in each value
+          if (_detectRNGManipulationInputs == true)
+          {
+            bool mod4Val02Found = false;
+            bool mod4Val1Found = false;
+            bool mod4Val3Found = false;
+
+            for (size_t i = 18; i < 160; i++) 
+            {
+              uint16_t mysteryInputTest = state.mysteryInput;
+              const auto rngTest  = _RandNum(0, state.score, i, state.ball[0].pos, mysteryInputTest);
+              const auto rnModFour = (rngTest % 4);
+
+              if (mod4Val02Found == false && (rnModFour == 0 || rnModFour == 2))
+              {
+                mod4Val02Found = true;
+                _RNfGManipulationPaddleXCandidates.insert(i);
+              }
+
+              if (mod4Val1Found == false && rnModFour == 1)
+              {
+                mod4Val1Found = true;
+                _RNfGManipulationPaddleXCandidates.insert(i);
+              }
+
+              if (mod4Val3Found == false && rnModFour == 3)
+              {
+                mod4Val3Found = true;
+                _RNfGManipulationPaddleXCandidates.insert(i);
+              }
+
+              if (mod4Val02Found && mod4Val1Found && mod4Val3Found) break;
+            }
+          }
+
           state._enemyMysteryInput = state.mysteryInput;
 
           // carry state = 0 since the last operation (A < B) cleared the flag
-          auto rn        = _RandNum(state, 0);
+          auto rn        = _RandNum(0, state.score, state.paddleX, state.ball[0].pos, state.mysteryInput);
+          state._wasRNGUsed2 = 1;
           auto rnModFour = (rn % 4);
 
           if (rnModFour == 0 || rnModFour == 2)
@@ -1756,7 +1816,38 @@ class GameOp
                     // Set the carry state based on the previous comparison.
                     const auto carryBit = (enemy.pos.x >= 0xb0);
 
-                    auto rn       = _RandNum(state, carryBit);
+                    // Run randnum to see which paddle posx that results in each value
+                    if (_detectRNGManipulationInputs == true)
+                    {
+                      bool mod2Val0Found = false;
+                      bool mod2Val1Found = false;
+
+                      for (size_t i = 18; i < 160; i++) 
+                      {
+                        int carryBitTest = carryBit;
+                        uint16_t mysteryInputTest = state.mysteryInput;
+                        const auto rngTest  = _RandNum(carryBitTest, state.score, i, state.ball[0].pos, mysteryInputTest);
+                        const auto rnModTwo = (rngTest % 2);
+
+                        if (mod2Val0Found == false && rnModTwo == 0)
+                        {
+                          mod2Val0Found = true;
+                          _RNfGManipulationPaddleXCandidates.insert(i);
+                        }
+
+                        if (mod2Val1Found == false && rnModTwo == 1)
+                        {
+                          mod2Val1Found = true;
+                          _RNfGManipulationPaddleXCandidates.insert(i);
+                        }
+
+                        if (mod2Val0Found && mod2Val1Found) break;
+                      }
+                    }
+
+
+                    auto rn       = _RandNum(carryBit, state.score, state.paddleX, state.ball[0].pos, state.mysteryInput);
+                    state._wasRNGUsed3 = 1;
                     enemy.moveDir = (rn % 2 == 0 ? 2 : 1);
 
                     state._justMovedEnemy   = enemy._id;
@@ -1807,8 +1898,37 @@ class GameOp
                   {
                     state._enemyMysteryInput = state.mysteryInput;
 
+                    // Run randnum to see which paddle posx that results in each value
+                    bool mod2Val0Found = false;
+                    bool mod2Val1Found = false;
+
+                    if (_detectRNGManipulationInputs == true)
+                    {
+                      for (size_t i = 18; i < 160; i++) 
+                      {
+                        uint16_t mysteryInputTest = state.mysteryInput;
+                        const auto rngTest  = _RandNum(1, state.score, i, state.ball[0].pos, mysteryInputTest);
+                        const auto rnModTwo = (rngTest % 2);
+
+                        if (mod2Val0Found == false && rnModTwo == 0)
+                        {
+                          mod2Val0Found = true;
+                          _RNfGManipulationPaddleXCandidates.insert(i);
+                        }
+
+                        if (mod2Val1Found == false && rnModTwo == 1)
+                        {
+                          mod2Val1Found = true;
+                          _RNfGManipulationPaddleXCandidates.insert(i);
+                        }
+
+                        if (mod2Val0Found && mod2Val1Found) break;
+                      }
+                    }
+
                     // carry state = 1 since last comparison (x == 0x10) set the flag
-                    auto rn       = _RandNum(state, 1);
+                    auto rn       = _RandNum(1, state.score, state.paddleX, state.ball[0].pos, state.mysteryInput);
+                    state._wasRNGUsed4 = 1;
                     enemy.moveDir = ((rn % 2 == 0) ? 3 : 0);
 
                     state._justMovedEnemy   = enemy._id;

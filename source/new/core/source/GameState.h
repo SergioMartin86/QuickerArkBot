@@ -172,8 +172,9 @@ struct GameState
   uint8_t _enemyMoveOptions      = 0;
   int8_t  _queueEnemyDestruction = -1;
   
-  uint8_t _wasRNGUsed = 0;
+  uint8_t _wasRNGUsed1 = 0;
+  uint8_t _wasRNGUsed2 = 0;
+  uint8_t _wasRNGUsed3 = 0;
+  uint8_t _wasRNGUsed4 = 0;
   uint8_t _enemyGateActive = 0;
-
-  std::set<uint8_t> _RNGManipulationPaddleXCandidates;
 };
