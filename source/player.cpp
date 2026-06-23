@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
   jaffarCommon::logger::refreshTerminal();
 
   // Creating emulator instance  
-  auto e = ark::EmuInstance(initialLevel, initialScore, true);
+  auto e = ark::EmuInstance(initialLevel, initialScore);
 
   // Initializing emulator instance
   e.initialize();

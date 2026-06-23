@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
   const auto differentialCompressionUseZlib = differentialCompressionJs["Use Zlib"].get<bool>();
 
   // Creating emulator instance
-  auto e = ark::EmuInstance(initialLevel, initialScore, false);
+  auto e = ark::EmuInstance(initialLevel, initialScore);
 
   // Initializing emulator instance
   e.initialize();
